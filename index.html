@@ -1129,7 +1129,7 @@ function Sidebar(){
   return (
     <div className="sw-sidebar" style={{
       width:268,flexShrink:0,
-      display:'flex',flexDirection:'column',
+      flexDirection:'column',
       minHeight:'100vh',position:'sticky',top:0,height:'100vh',
       background:'var(--paper)',
       padding:'0',
@@ -1949,6 +1949,8 @@ function StepsOverviewScreen(){
 function ResentmentListScreen(){
   const nav=useNav();
   const [filter,setFilter]=useState('all');
+  const [sort,setSort]=useState('new');   // 'new' = newest first | 'az' = alphabetical
+  const [query,setQuery]=useState('');
   const {steps, removeItem} = useSteps();
   const items=steps.resentments;
   const counts = {
@@ -1957,10 +1959,16 @@ function ResentmentListScreen(){
     inst: items.filter(r=>r.type==='Institution').length,
     prin: items.filter(r=>r.type==='Principle').length,
   };
-  const filtered=items.filter(r=>filter==='all'?true:filter==='people'?r.type==='Person':filter==='inst'?r.type==='Institution':r.type==='Principle');
+  const q=query.trim().toLowerCase();
+  let filtered=items.filter(r=>filter==='all'?true:filter==='people'?r.type==='Person':filter==='inst'?r.type==='Institution':r.type==='Principle');
+  if(q) filtered=filtered.filter(r=>r.name.toLowerCase().includes(q)||(r.note||'').toLowerCase().includes(q));
+  // Newest first = reverse of entry order (items are appended). A–Z = locale name sort.
+  filtered = sort==='az'
+    ? [...filtered].sort((a,b)=>a.name.localeCompare(b.name,undefined,{sensitivity:'base'}))
+    : [...filtered].reverse();
   return (
     <>
-      <AppBar eyebrow="I · Step 4 · pg 64" title="Resentment list"/>
+      <AppBar eyebrow="Step 4 · pg 64" title="Resentment list"/>
       <ScreenBody>
         <section style={{padding:'4px 24px 0'}}>
           <Scripture cite="Big Book, pg 65">"We went back through our lives. Nothing counted but thoroughness and honesty."</Scripture>
@@ -1976,30 +1984,48 @@ function ResentmentListScreen(){
             {value:'prin',label:`Principles ${counts.prin}`},
           ]}/>
         </section>
-        <section>
+        {items.length>0 && (
+          <section style={{padding:'18px 24px 0',display:'flex',gap:16,alignItems:'flex-end',flexWrap:'wrap'}}>
+            <div style={{flex:'1 1 180px',minWidth:160}}>
+              <SerifInput value={query} onChange={setQuery} placeholder="Search names…" style={{fontSize:16}}/>
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:4,paddingBottom:2}}>
+              <Stamp style={{color:'var(--faint)',marginRight:4}}>sort</Stamp>
+              <Pressable onClick={()=>setSort('new')} style={{padding:'2px 6px',width:'auto'}}>
+                <span className="serif" style={{fontSize:14,fontStyle:sort==='new'?'normal':'italic',color:sort==='new'?'var(--terra-ink)':'var(--muted)',borderBottom:sort==='new'?'1.5px solid var(--terra)':'1.5px solid transparent'}}>newest</span>
+              </Pressable>
+              <span style={{color:'var(--faint)'}}>·</span>
+              <Pressable onClick={()=>setSort('az')} style={{padding:'2px 6px',width:'auto'}}>
+                <span className="serif" style={{fontSize:14,fontStyle:sort==='az'?'normal':'italic',color:sort==='az'?'var(--terra-ink)':'var(--muted)',borderBottom:sort==='az'?'1.5px solid var(--terra)':'1.5px solid transparent'}}>A–Z</span>
+              </Pressable>
+            </div>
+          </section>
+        )}
+        <section style={{padding:'12px 24px 0'}}>
           {filtered.length===0 && (
             <div style={{padding:'24px',textAlign:'center'}}>
               <p className="serif" style={{fontSize:15,color:'var(--muted)',fontStyle:'italic',lineHeight:1.55}}>
-                {items.length===0?'Nothing here yet. Tap "add a name" below to begin.':'No entries match this filter.'}
+                {items.length===0?'Nothing here yet. Tap "add a name" below to begin.':q?`No names match "${query}".`:'No entries match this filter.'}
               </p>
             </div>
           )}
-          {filtered.map((r,i)=>(
-            <div key={r.id} style={{display:'flex',alignItems:'flex-start',gap:14,padding:'14px 24px',borderBottom:'1px solid var(--rule-soft)'}}>
-              <span className="serif" style={{fontSize:12,color:'var(--muted)',fontStyle:'italic',width:22,marginTop:5,fontVariantNumeric:'oldstyle-nums'}}>{romanize(i+1)}.</span>
-              <Pressable onClick={()=>nav.push('lists-edit',{id:r.id})} style={{flex:1,padding:0,textAlign:'left'}}>
-                <div className="serif" style={{fontSize:18,color:'var(--ink)',lineHeight:1.2}}>{r.name}</div>
-                <div style={{display:'flex',gap:10,marginTop:4}}>
-                  <Stamp style={{color:'var(--muted)'}}>{r.type.toLowerCase()}</Stamp>
-                  {r.note&&<Stamp style={{color:'var(--faint)'}}>· {r.note}</Stamp>}
-                </div>
-              </Pressable>
-              <Pressable onClick={()=>{ if(confirm(`Remove "${r.name}" from the resentment list?`)) removeItem('resentments', r.id); }}
-                style={{padding:'4px 8px',marginTop:2}}>
-                <span className="serif" style={{fontSize:16,color:'var(--faint)'}}>✕</span>
-              </Pressable>
-            </div>
-          ))}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(210px, 1fr))',gap:'0 18px'}}>
+            {filtered.map((r)=>(
+              <div key={r.id} style={{display:'flex',alignItems:'center',gap:10,padding:'9px 2px',borderBottom:'1px solid var(--rule-soft)'}}>
+                <Pressable onClick={()=>nav.push('lists-edit',{id:r.id})} style={{flex:1,padding:0,textAlign:'left',minWidth:0}}>
+                  <div className="serif" style={{fontSize:17,color:'var(--ink)',lineHeight:1.25,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{r.name}</div>
+                  <div style={{display:'flex',gap:8,marginTop:1,whiteSpace:'nowrap',overflow:'hidden'}}>
+                    <Stamp style={{color:'var(--muted)'}}>{r.type.toLowerCase()}</Stamp>
+                    {r.note&&<Stamp style={{color:'var(--faint)',overflow:'hidden',textOverflow:'ellipsis'}}>· {r.note}</Stamp>}
+                  </div>
+                </Pressable>
+                <Pressable onClick={()=>{ if(confirm(`Remove "${r.name}" from the resentment list?`)) removeItem('resentments', r.id); }}
+                  style={{padding:'2px 4px',width:'auto',flexShrink:0}}>
+                  <span className="serif" style={{fontSize:15,color:'var(--faint)'}}>✕</span>
+                </Pressable>
+              </div>
+            ))}
+          </div>
         </section>
         <section style={{padding:'20px 24px 30px'}}>
           <Pressable onClick={()=>nav.push('lists-add')} style={{display:'flex',alignItems:'center',gap:10,padding:'14px 0',borderTop:'1px dashed var(--rule)'}}>
@@ -2019,10 +2045,16 @@ function ResentmentAddScreen(){
   const existing=nav.params&&nav.params.id?steps.resentments.find(r=>r.id===nav.params.id):null;
   const isEdit = !!existing;
 
+  // Names already on the list (lowercased), excluding the one being edited — for dedupe warnings.
+  const existingNames = React.useMemo(()=>new Set(
+    steps.resentments.filter(r=>!existing||r.id!==existing.id).map(r=>r.name.trim().toLowerCase())
+  ),[steps.resentments, existing]);
+
   // Edit mode: single row
   const [name,setName]=useState(existing?existing.name:'');
   const [type,setType]=useState(existing?existing.type:'Person');
   const [note,setNote]=useState(existing?existing.note:'');
+  const nameDup = name.trim() && existingNames.has(name.trim().toLowerCase());
 
   // Add mode: multi-row table — pick type once, then enter many names
   const [bulkType, setBulkType] = useState('Person');
@@ -2030,12 +2062,15 @@ function ResentmentAddScreen(){
 
   const saveSingle = ()=>{
     if(!name.trim()){ alert('Please add a name before saving.'); return; }
+    if(nameDup && !confirm(`"${name.trim()}" is already on the list. Add it anyway?`)) return;
     updateItem('resentments', existing.id, {name:name.trim(), type, note:note.trim()});
     nav.back();
   };
   const saveBulk = ()=>{
     const valid = rows.filter(r=>r.name.trim());
     if(valid.length===0){ alert('Add at least one name before saving.'); return; }
+    const dups = valid.filter(r=>existingNames.has(r.name.trim().toLowerCase())).map(r=>r.name.trim());
+    if(dups.length && !confirm(`Already on the list: ${dups.join(', ')}.\n\nSave anyway?`)) return;
     addItems('resentments', valid.map(r=>({name:r.name.trim(), type:bulkType, note:r.note.trim()})));
     nav.back();
   };
@@ -2050,6 +2085,7 @@ function ResentmentAddScreen(){
         <section style={{padding:'12px 24px 24px'}}>
           <Eyebrow style={{marginBottom:4}}>Name or description</Eyebrow>
           <SerifInput value={name} onChange={setName} autoFocus placeholder="e.g. Dad, Mrs. K., the court…"/>
+          {nameDup && <p className="serif" style={{fontSize:13,color:'var(--terra-ink)',fontStyle:'italic',marginTop:6}}>Already on your list — you can still save it.</p>}
           <div style={{marginTop:32}}>
             <Eyebrow style={{marginBottom:12}}>What are they?</Eyebrow>
             <SegPills value={type} onChange={setType} options={[{value:'Person',label:'Person'},{value:'Institution',label:'Institution'},{value:'Principle',label:'Principle'}]}/>
@@ -2089,12 +2125,17 @@ function ResentmentAddScreen(){
             <Eyebrow>Note · optional</Eyebrow>
             <span/>
           </div>
-          {rows.map((row,i)=>(
+          {rows.map((row,i)=>{
+            const rowDup = row.name.trim() && existingNames.has(row.name.trim().toLowerCase());
+            return (
             <div key={i} style={{display:'grid',gridTemplateColumns:'28px 1fr 1fr 32px',gap:8,padding:'10px 16px',borderBottom:'1px solid var(--rule-soft)',alignItems:'center'}}>
-              <span className="serif" style={{fontSize:13,color:'var(--terra)',fontStyle:'italic',fontVariantNumeric:'oldstyle-nums',textAlign:'right'}}>{romanize(i+1)}.</span>
-              <input value={row.name} onChange={(e)=>updateRow(i,'name',e.target.value)}
-                placeholder="Dad, Mrs. K., the court…" autoFocus={i===0}
-                style={{padding:'8px 0',background:'transparent',border:0,borderBottom:'1px solid var(--rule-soft)',fontFamily:'Newsreader,Georgia,serif',fontSize:16,color:'var(--ink)',outline:'none'}}/>
+              <span className="serif" style={{fontSize:13,color:'var(--muted)',fontVariantNumeric:'oldstyle-nums',textAlign:'right'}}>{i+1}</span>
+              <div style={{minWidth:0}}>
+                <input value={row.name} onChange={(e)=>updateRow(i,'name',e.target.value)}
+                  placeholder="Dad, Mrs. K., the court…" autoFocus={i===0}
+                  style={{width:'100%',padding:'8px 0',background:'transparent',border:0,borderBottom:'1px solid var(--rule-soft)',fontFamily:'Newsreader,Georgia,serif',fontSize:16,color:'var(--ink)',outline:'none'}}/>
+                {rowDup && <span className="serif" style={{fontSize:12,color:'var(--terra-ink)',fontStyle:'italic'}}>already on list</span>}
+              </div>
               <input value={row.note} onChange={(e)=>updateRow(i,'note',e.target.value)}
                 placeholder="family · work · legal…"
                 style={{padding:'8px 0',background:'transparent',border:0,borderBottom:'1px solid var(--rule-soft)',fontFamily:'Newsreader,Georgia,serif',fontSize:15,color:'var(--ink-2)',outline:'none'}}/>
@@ -2102,7 +2143,8 @@ function ResentmentAddScreen(){
                 <span className="serif" style={{fontSize:14,color:rows.length>1?'var(--faint)':'transparent'}}>✕</span>
               </Pressable>
             </div>
-          ))}
+            );
+          })}
         </section>
         <section style={{padding:'12px 24px 0'}}>
           <Pressable onClick={addRow} style={{display:'flex',alignItems:'center',gap:10,padding:'14px 0'}}>

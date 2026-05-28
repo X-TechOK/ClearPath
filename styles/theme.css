@@ -1,0 +1,133 @@
+/* ─────────────────────────────────────────────
+   THEME VARIABLES
+   Light mode is default. Dark mode swaps in via
+   [data-theme="dark"] on <html>.
+───────────────────────────────────────────── */
+
+:root,
+:root[data-theme="light"] {
+  --bg:             #f4f6fb;
+  --surface:        #ffffff;
+  --surface2:       #eef1f8;
+  --border:         #dde2f0;
+
+  --accent:         #4a6fa5;
+  --accent-hover:   #3b5c8c;
+  --accent2:        #7c5cbf;
+
+  --text:           #2c3556;
+  --muted:          #7a84a8;
+
+  --success:        #1e7e4a;
+  --warn:           #c27c0e;
+  --danger:         #c0392b;
+
+  /* Special block backgrounds */
+  --prayer-bg:      #f0f4f0;
+  --prayer-border:  #b8d4b8;
+  --quote-bg:       #eef2f8;
+  --quote-border:   #7a9fd4;
+  --note-bg:        #fdf8ec;
+  --note-border:    #d4aa50;
+
+  --shadow-sm:      0 1px 4px rgba(74,111,165,0.07);
+  --shadow:         0 2px 16px rgba(74,111,165,0.10);
+  --shadow-lg:      0 6px 32px rgba(74,111,165,0.14);
+  --radius:         12px;
+  --radius-sm:      8px;
+}
+
+:root[data-theme="dark"] {
+  --bg:             #0f1117;
+  --surface:        #1a1d27;
+  --surface2:       #22263a;
+  --border:         #2e3350;
+
+  --accent:         #6c8ef7;
+  --accent-hover:   #8aaafb;
+  --accent2:        #a78bfa;
+
+  --text:           #e8eaf6;
+  --muted:          #8890b0;
+
+  --success:        #22c55e;
+  --warn:           #f59e0b;
+  --danger:         #ef4444;
+
+  --prayer-bg:      #1a2420;
+  --prayer-border:  #3a6050;
+  --quote-bg:       #1a1f30;
+  --quote-border:   #4a6aaa;
+  --note-bg:        #201c10;
+  --note-border:    #806030;
+
+  --shadow-sm:      0 1px 4px rgba(0,0,0,0.3);
+  --shadow:         0 4px 24px rgba(0,0,0,0.4);
+  --shadow-lg:      0 8px 40px rgba(0,0,0,0.5);
+}
+
+/* ─── RESET & BASE ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  min-height: 100vh;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+/* ─── LAYOUT ─── */
+#app { display: flex; min-height: 100vh; }
+
+#sidebar {
+  width: 265px;
+  min-height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0;
+  z-index: 100;
+  box-shadow: var(--shadow);
+  transition: transform 0.3s ease, background 0.25s ease;
+}
+
+#main {
+  margin-left: 265px;
+  flex: 1;
+  min-height: 100vh;
+  transition: margin-left 0.3s ease;
+}
+
+#topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: var(--shadow-sm);
+  transition: background 0.25s ease;
+}
+
+#content {
+  padding: 28px 24px;
+  max-width: 860px;
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 700px) {
+  #sidebar { transform: translateX(-265px); }
+  #sidebar.open { transform: translateX(0); box-shadow: 4px 0 32px rgba(0,0,0,0.2); }
+  #main { margin-left: 0; }
+  #content { padding: 18px 14px; }
+}

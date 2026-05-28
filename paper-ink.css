@@ -1,0 +1,200 @@
+/* ─────────────────────────────────────────────
+   PAPER & INK — design system tokens
+   Used by the canvas + the prototype.
+───────────────────────────────────────────── */
+
+:root {
+  /* warm paper neutrals */
+  --paper:       oklch(0.965 0.012 78);
+  --paper-deep:  oklch(0.935 0.014 78);
+  --surface:     oklch(0.985 0.008 78);
+  --surface-2:   oklch(0.955 0.010 78);
+
+  /* ink */
+  --ink:         oklch(0.235 0.012 60);
+  --ink-2:       oklch(0.380 0.012 60);
+  --muted:       oklch(0.560 0.010 60);
+  --faint:       oklch(0.720 0.008 60);
+
+  /* hairlines */
+  --rule:        oklch(0.870 0.010 70);
+  --rule-soft:   oklch(0.910 0.008 70);
+
+  /* accents — terracotta grounding + sage serenity */
+  --terra:       oklch(0.500 0.095 35);
+  --terra-soft:  oklch(0.920 0.030 40);
+  --terra-ink:   oklch(0.380 0.090 35);
+
+  --sage:        oklch(0.540 0.055 155);
+  --sage-soft:   oklch(0.935 0.022 155);
+
+  /* utility */
+  --dusk:        oklch(0.455 0.055 270);  /* deep slate-violet for night practice */
+  --gold:        oklch(0.730 0.075 75);   /* aged ink stamp */
+
+  /* radii — gentle, not bubbly */
+  --r-sm: 6px;
+  --r:    10px;
+  --r-lg: 14px;
+
+  /* shadow — extremely subtle, warm */
+  --sh-1: 0 1px 0 rgba(60,40,20,0.04), 0 1px 2px rgba(60,40,20,0.04);
+  --sh-2: 0 1px 0 rgba(60,40,20,0.05), 0 4px 14px rgba(60,40,20,0.06);
+}
+
+/* paper noise texture — applied behind everything */
+.paper-bg {
+  background-color: var(--paper);
+  background-image:
+    /* subtle vertical fiber */
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 2px,
+      rgba(120, 90, 60, 0.012) 2px 3px
+    ),
+    /* horizontal weave */
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 3px,
+      rgba(120, 90, 60, 0.010) 3px 4px
+    ),
+    /* warm vignette */
+    radial-gradient(
+      ellipse at 50% -20%,
+      oklch(0.98 0.014 78) 0%,
+      var(--paper) 60%
+    );
+}
+
+.paper-bg-deep {
+  background-color: var(--paper-deep);
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 2px,
+      rgba(120, 90, 60, 0.014) 2px 3px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 3px,
+      rgba(120, 90, 60, 0.012) 3px 4px
+    );
+}
+
+/* type system */
+.serif {
+  font-family: 'Newsreader', 'Source Serif Pro', Georgia, serif;
+  font-feature-settings: 'liga', 'kern', 'onum';
+  font-optical-sizing: auto;
+}
+.sans {
+  font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: 'ss01', 'kern';
+}
+.mono {
+  font-family: 'Geist Mono', ui-monospace, 'SF Mono', monospace;
+  font-feature-settings: 'kern';
+}
+
+/* eyebrow — uppercase tracking label */
+.eyebrow {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* hairline rule */
+.hairline {
+  height: 1px;
+  background: var(--rule);
+  border: 0;
+  margin: 0;
+}
+.hairline-soft { background: var(--rule-soft); }
+
+/* hand-marked dot — used in place of bullet/icon */
+.ink-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--ink);
+  flex-shrink: 0;
+}
+.ink-dot.terra { background: var(--terra); }
+.ink-dot.sage  { background: var(--sage); }
+.ink-dot.dusk  { background: var(--dusk); }
+
+/* page edge — left margin rule like a notebook */
+.page-edge {
+  border-left: 1px solid var(--terra-soft);
+  padding-left: 16px;
+}
+
+/* scripture/quote — hanging serif italics */
+.scripture {
+  font-family: 'Newsreader', Georgia, serif;
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.scripture cite {
+  display: block;
+  margin-top: 8px;
+  font-style: normal;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: 'Geist Mono', monospace;
+}
+.scripture cite::before { content: "— "; }
+
+/* drop-cap — first letter of a journal entry */
+.drop-cap::first-letter {
+  font-family: 'Newsreader', Georgia, serif;
+  font-weight: 500;
+  font-size: 3.2em;
+  line-height: 0.85;
+  float: left;
+  margin: 6px 6px 0 0;
+  color: var(--terra-ink);
+}
+
+/* checkbox — hand-drawn square */
+.handcheck {
+  width: 18px; height: 18px;
+  border: 1.25px solid var(--ink-2);
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--surface);
+}
+.handcheck.checked {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.handcheck.checked::after {
+  content: "";
+  width: 9px; height: 5px;
+  border-left: 1.5px solid var(--paper);
+  border-bottom: 1.5px solid var(--paper);
+  transform: translateY(-1.5px) rotate(-45deg);
+}
+
+/* number stamp — like a date or page number in the margin */
+.stamp {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+/* reset for embedded prototypes */
+* { -webkit-font-smoothing: antialiased; }

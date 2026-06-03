@@ -79,6 +79,9 @@ h1,h2,h3,h4{font-weight:400;}
   .sw-sidebar{ display:flex; }
   .sw-content{
     flex:1;
+    min-width:0;          /* allow the content column to shrink instead of forcing
+                             inner text to its min-content width (one word per line).
+                             Root cause of the B3 "pinched cause column" bug. */
     max-width:760px;
     display:flex;
     flex-direction:column;
@@ -208,10 +211,73 @@ const STEP_SECTIONS = [
   {id:'causes',roman:'II',  title:'Causes & affects',step:'Step 4',   pg:'pg 64–65', status:'progress'},
   {id:'faults',roman:'III', title:'Our faults',      step:'Step 4',   pg:'pg 66–67', status:'next'},
   {id:'fear1', roman:'IV',  title:'Fear inventory',  step:'Step 4',   pg:'pg 67–68', status:'pending'},
-  {id:'fear2', roman:'V',   title:'Fear deep dive',  step:'12 & 12',  pg:'pg 49–53', status:'pending'},
+  {id:'fear2', roman:'V',   title:'Exploration of fear', step:'12 & 12', pg:'pg 49–53', status:'pending'},
   {id:'sex',   roman:'VI',  title:'Sex relations',   step:'Step 4',   pg:'pg 68–71', status:'pending'},
   {id:'eighth',roman:'VII', title:'Amends list',     step:'Step 8',   pg:'pg 76–77', status:'pending'},
 ];
+
+/* ── OUR FAULTS question schema (from Big Book pg 66–67, per Workshop Docs) ──
+   Each cause is examined under three headers. Questions are stored verbatim so
+   the app reproduces the written workshop exactly. Keys are stable data keys. */
+const FAULTS_INSTRUCTIONS = [
+  'Answer as many questions as possible for each cause.',
+  'Answers must focus solely on you — not the other person, institution, or principle.',
+];
+const FAULTS_GROUPS = [
+  {
+    key:'selfish', label:'Selfishness', cite:'pg 67',
+    intro:'"Where had we been selfish…"',
+    questions:[
+      {key:'want',      q:'What did I want?', hint:'Be specific.'},
+      {key:'why_want',  q:'Why did I want it?', hint:'Always some form of wanting to feel good about myself, or not wanting to feel bad about myself.'},
+    ],
+  },
+  {
+    key:'dishonest', label:'Dishonesty', cite:'pg 67',
+    intro:'"…dishonest…"',
+    questions:[
+      {key:'d1', q:'What were the FACTS of the situation?'},
+      {key:'d2', q:'What am I not seeing or admitting?'},
+      {key:'d3', q:'What lie did I tell myself?', hint:'Always present.'},
+      {key:'d4', q:'What is the lie I tell others?'},
+      {key:'d5', q:'Have I ever done the thing resented above?'},
+      {key:'d6', q:'Were my expectations reasonable?'},
+      {key:'d7', q:'What is the real truth?'},
+      {key:'d8', q:'Did I withhold a truth or action to manipulate the situation?'},
+    ],
+  },
+  {
+    key:'self_seeking', label:'Self-Seeking', cite:'pg 67',
+    intro:'"…self-seeking…" — List all behaviors you employed in this situation.',
+    questions:[
+      {key:'ss_took',    q:'What actions did I take to get what I wanted?', hint:'Always present.'},
+      {key:'ss_omitted', q:'What actions did I omit to get what I wanted?', hint:'Less common, but just as dysfunctional.'},
+    ],
+  },
+];
+/* Flat list of all Faults answer keys, for completion counts. */
+const FAULTS_ALL_KEYS = FAULTS_GROUPS.flatMap(g=>g.questions.map(q=>q.key));
+
+/* Derive a section's real status from the user's data + any explicit override.
+   Returns 'done' | 'progress' | 'undone'. Shared by Home ("Continue" card) and
+   the Steps overview so both reflect actual progress rather than static sample
+   status. The "next section to work" is the first section that is NOT done. */
+function inferSectionStatus(steps, id){
+  const override=(steps.sectionStatus||{})[id];
+  if(override) return override;
+  if(id==='lists'  && steps.resentments.length>0) return 'progress';
+  if(id==='causes' && steps.causes.length>0)      return 'progress';
+  if(id==='faults' && steps.faults.length>0)      return 'progress';
+  if(id==='fear1'  && steps.fears.length>0)        return 'progress';
+  if(id==='fear2'  && steps.fear2 && Object.values(steps.fear2).some(q=>q&&Object.keys(q).length>0)) return 'progress';
+  if(id==='sex'    && steps.sexRelations && steps.sexRelations.length>0) return 'progress';
+  if(id==='eighth' && steps.amends.length>0)      return 'progress';
+  return 'undone';
+}
+/* The section the user should continue with = the first one not yet marked done. */
+function firstUnfinishedSection(steps){
+  return STEP_SECTIONS.find(s=>inferSectionStatus(steps,s.id)!=='done') || STEP_SECTIONS[STEP_SECTIONS.length-1];
+}
 
 const INSTINCTS = [
   {key:'self_esteem',short:'self-esteem',long:'Self-esteem'},
@@ -577,24 +643,51 @@ function DailyProvider({children}){
 
 /* ── STEPS STATE (resentments, causes, faults, fears, fearCategories, amends + section status) ── */
 const STEPS_KEY = 'sw_steps';
+/* ── FEAR DEEP DIVE ("Fear 2") question schema — 12 & 12 pgs 52–53 ──
+   The same nine questions are answered for every fear category (including any
+   the user adds). Stored verbatim; Q9's source text uses "God" — written here
+   with the "Higher Power" token so applySpiritualLanguage() can render the
+   user's chosen wording. */
+const FEAR2_QUESTIONS = [
+  {key:'q1', q:'Why did I have this fear?'},
+  {key:'q2', q:'When did I first notice this fear in my life?'},
+  {key:'q3', q:'How did I hold onto this fear?'},
+  {key:'q4', q:'What did this fear make me do?'},
+  {key:'q5', q:'What chain of circumstances did this fear set in motion in my life?'},
+  {key:'q6', q:'How did I react to this fear?'},
+  {key:'q7', q:'What decision did this fear cause me to make?'},
+  {key:'q8', q:'How did self-reliance fail me?'},
+  {key:'q9', q:'What should I have done instead?', hint:'The answer is always: I should have trusted and relied upon my Higher Power by … (fill in the blank).'},
+];
+
 const DEFAULT_FEAR_CATS_V2 = [
   "Other people's opinions","Not getting what I want","Not having control",
   "Financial insecurity","Abandonment","Physical harm","Failure","Success",
 ];
 const DEFAULT_STEPS_STATE = {
   resentments: [],   // {id, name, type, note}
-  causes: [],        // {id, name, cause, self_esteem, security, ambitions, personal, sex, fear, flag}
+  causes: [],        // {id, name, cause, self_esteem, security, ambitions, personal, sex, fear}
   faults: [],        // {id, causeId, name, cause, selfish, dishonest, self_seeking, frightened}
   fearCategories: [...DEFAULT_FEAR_CATS_V2],
-  fears: [],         // {id, name, cause, categories: []}
-  amends: [],        // {id, name, cause, harms, direct}
+  fears: [],         // {id, name, cause, causeId?, categories: []}
+  fear2: {},         // { [categoryName]: { q1..q9: answer } }
+  sexRelations: [],  // {id, name(coded), q1..q12}
+  sexIdeal: '',      // free text (instruction 8, kept separate from the list)
+  amends: [],        // {id, resentmentId?, name, cause, harms, direct, living, complete}
   sectionStatus: {}, // { [sectionId]: 'done'|'progress'|'undone' }
 };
 
 function loadSteps(){
   try{
     const s = localStorage.getItem(STEPS_KEY);
-    if(s) return { ...DEFAULT_STEPS_STATE, ...JSON.parse(s) };
+    if(s){
+      const data = { ...DEFAULT_STEPS_STATE, ...JSON.parse(s) };
+      // Self-heal: drop any blank/empty fear categories (could exist from an early
+      // edit-categories bug). If that empties the list, fall back to the defaults.
+      const cleaned = (data.fearCategories||[]).filter(c=>typeof c==='string' && c.trim()).map(c=>c.trim());
+      data.fearCategories = cleaned.length ? cleaned : [...DEFAULT_FEAR_CATS_V2];
+      return data;
+    }
   }catch{}
   return { ...DEFAULT_STEPS_STATE };
 }
@@ -637,10 +730,9 @@ function StepsProvider({children}){
   const removeItem = useCallback((field, id)=>{
     setStepsState(prev=>{
       const next = { ...prev, [field]: prev[field].filter(x=>x.id!==id) };
-      // If a cause is removed, also remove the matching fault row.
-      if(field==='causes'){
-        next.faults = (prev.faults||[]).filter(f=>f.causeId!==id);
-      }
+      // Preserve downstream work (merge, never delete): if a cause is removed we
+      // KEEP any fault/fear rows keyed to it. Those screens flag them as
+      // "source cause removed" so the written inventory is never silently lost.
       saveSteps(next);
       return next;
     });
@@ -1209,12 +1301,14 @@ function AppShell({children}){
   );
 }
 
-function AppBar({eyebrow,title,right,sticky=true}){
+function AppBar({eyebrow,title,right,sticky=true,onBack}){
   const {canBack,back}=useNav();
+  const showBack = !!onBack || canBack;
+  const handleBack = onBack || back;
   return (
     <div style={{position:sticky?'sticky':'relative',top:0,zIndex:30,background:'transparent',backdropFilter:'blur(8px) saturate(160%)',WebkitBackdropFilter:'blur(8px) saturate(160%)',paddingTop:'env(safe-area-inset-top,0px)'}}>
-      <div style={{padding:'14px 20px 12px',display:'flex',alignItems:'flex-start',gap:14,minHeight:56}}>
-        {canBack&&<button onClick={back} style={{background:'transparent',border:0,cursor:'pointer',padding:'4px 8px 4px 0',marginLeft:-8,marginTop:2,fontFamily:'Newsreader,Georgia,serif',fontSize:22,color:'var(--ink)',lineHeight:1}} aria-label="Back">‹</button>}
+      <div style={{padding:'14px 20px 12px',paddingLeft:'max(20px, env(safe-area-inset-left, 0px))',display:'flex',alignItems:'flex-start',gap:14,minHeight:56}}>
+        {showBack&&<button onClick={handleBack} style={{background:'transparent',border:0,cursor:'pointer',padding:'4px 8px 4px 0',marginLeft:-8,marginTop:2,fontFamily:'Newsreader,Georgia,serif',fontSize:22,color:'var(--ink)',lineHeight:1}} aria-label="Back">‹</button>}
         <div style={{flex:1,minWidth:0}}>
           {eyebrow&&<div className="eyebrow">{eyebrow}</div>}
           {title&&<h1 className="serif" style={{fontSize:22,lineHeight:1.15,fontWeight:400,letterSpacing:'-0.01em',marginTop:eyebrow?4:0,color:'var(--ink)',textWrap:'pretty'}}>{title}</h1>}
@@ -1266,15 +1360,15 @@ function HandCheck({checked,onChange,size=20}){
 function Pressable({children,onClick,style={},as='button'}){
   const Tag=as;
   return (
-    <Tag onClick={onClick} style={{display:'block',width:'100%',textAlign:'left',background:'transparent',border:0,padding:0,cursor:onClick?'pointer':'default',fontFamily:'inherit',color:'inherit',...style}}>
+    <Tag onClick={onClick} style={{display:'block',width:'100%',minWidth:0,textAlign:'left',background:'transparent',border:0,padding:0,cursor:onClick?'pointer':'default',fontFamily:'inherit',color:'inherit',...style}}>
       {children}
     </Tag>
   );
 }
 
-function SerifInput({value,onChange,placeholder,autoFocus,style={}}){
+function SerifInput({value,onChange,placeholder,autoFocus,style={},list}){
   return (
-    <input type="text" value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} autoFocus={autoFocus}
+    <input type="text" value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} autoFocus={autoFocus} list={list}
       style={{width:'100%',background:'transparent',border:0,borderBottom:'1px solid var(--rule)',padding:'8px 0',fontFamily:'Newsreader,Georgia,serif',fontSize:18,color:'var(--ink)',outline:'none',borderRadius:0,...style}}
       onFocus={e=>e.target.style.borderBottomColor='var(--terra)'}
       onBlur={e=>e.target.style.borderBottomColor='var(--rule)'}
@@ -1291,6 +1385,36 @@ function SerifTextarea({value,onChange,placeholder,minRows=3,autoFocus,style={}}
     />
   );
 }
+
+/* Collapsed-by-default question row: tap to expand one answer at a time, with a
+   done-marker showing whether it's been answered. Keeps long question sets calm
+   and uncluttered (used by Faults, Fear deep dive, Sex relations). The parent
+   owns open/answer state so only one row need be open at a time. */
+function ExpandableAnswer({n, question, hint, value, open, onToggle, onChange, placeholder}){
+  const answered = !!(value && value.trim());
+  return (
+    <div style={{borderBottom:'1px solid var(--rule-soft)'}}>
+      <Pressable onClick={onToggle} style={{display:'flex',alignItems:'flex-start',gap:12,padding:'14px 0',textAlign:'left',width:'100%'}}>
+        <span aria-hidden="true" style={{flexShrink:0,marginTop:3,width:16,height:16,borderRadius:'50%',border:`1.5px solid ${answered?'var(--terra-ink)':'var(--muted)'}`,background:answered?'var(--terra-ink)':'transparent',display:'inline-flex',alignItems:'center',justifyContent:'center'}}>
+          {answered&&<span style={{color:'var(--paper)',fontSize:10,lineHeight:1}}>✓</span>}
+        </span>
+        <span style={{flex:1,minWidth:0}}>
+          {typeof n!=='undefined' && <span className="serif" style={{fontSize:13,color:'var(--terra)',fontStyle:'italic',marginRight:6,fontVariantNumeric:'oldstyle-nums'}}>{n}.</span>}
+          <span className="serif" style={{fontSize:16,lineHeight:1.4,color:answered?'var(--ink)':'var(--ink-2)'}}>{question}</span>
+        </span>
+        <span className="serif" style={{flexShrink:0,color:'var(--muted)',fontSize:16,marginTop:2}}>{open?'–':'+'}</span>
+      </Pressable>
+      {open && (
+        <div style={{padding:'0 0 16px 28px'}}>
+          {hint && <p className="serif" style={{fontSize:13,color:'var(--muted)',fontStyle:'italic',lineHeight:1.5,margin:'0 0 8px'}}>{hint}</p>}
+          <SerifTextarea value={value||''} onChange={onChange} minRows={2} autoFocus placeholder={placeholder||'Write your answer…'}/>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 
 function SegPills({value,onChange,options}){
   return (
@@ -1453,7 +1577,18 @@ function HomeScreen(){
   const morningDone = (todayEntry.morningChecks||[]).length;
   const morningTotal = prayers.length;
   const prayerMarks = Array.from({length:morningTotal});
-  const cont=STEP_SECTIONS.find(s=>s.status==='progress');
+  // "Continue" = the first section not yet marked done (reflects real progress,
+  // so it keeps showing Resentments until that section is actually completed).
+  const cont=firstUnfinishedSection(steps);
+  const contMeta={
+    lists: {line:'"We listed people, institutions or principles with whom we were angry."', tab:'steps', screen:'lists'},
+    causes:{line:'"On our grudge list we set opposite each name our injuries."', tab:'steps', screen:'causes'},
+    faults:{line:'"…we resolutely looked for our own mistakes."', tab:'steps', screen:'faults'},
+    fear1: {line:'"We reviewed our fears thoroughly."', tab:'steps', screen:'fear1'},
+    fear2: {line:'"Questions like these… will help turn up the root causes."', tab:'steps', screen:'fear2'},
+    sex:   {line:'"We subjected each relation to this test."', tab:'steps', screen:'sex'},
+    eighth:{line:'"Made a list of all persons we had harmed."', tab:'steps', screen:'eighth'},
+  }[cont.id] || {line:'', tab:'steps', screen:cont.id};
   const causesByName=steps.causes.reduce((m,c)=>{m[c.name]=(m[c.name]||0)+1;return m;},{});
   const namesWorked=Object.keys(causesByName).length;
   const namesTotal=new Set(steps.resentments.map(r=>r.name)).size;
@@ -1507,17 +1642,19 @@ function HomeScreen(){
             <Eyebrow>Continue · {cont.step.toLowerCase()}</Eyebrow>
             <Stamp>{cont.pg}</Stamp>
           </div>
-          <Pressable onClick={()=>nav.goto('steps','causes')}>
+          <Pressable onClick={()=>nav.goto(contMeta.tab,contMeta.screen)}>
             <div className="serif" style={{fontSize:24,fontWeight:400,letterSpacing:'-0.005em',lineHeight:1.15,color:'var(--ink)'}}>{cont.title}</div>
-            <p className="serif" style={{fontSize:14,color:'var(--muted)',fontStyle:'italic',marginTop:5,marginBottom:16,lineHeight:1.5}}>"On our grudge list we set opposite each name our injuries."</p>
-            <div style={{display:'flex',alignItems:'center',gap:14}}>
-              <div style={{flex:1,height:2,background:'var(--rule)',borderRadius:1}}>
-                <div style={{width:`${Math.round(namesWorked/namesTotal*100)}%`,height:'100%',background:'var(--terra)'}}/>
+            {contMeta.line && <p className="serif" style={{fontSize:14,color:'var(--muted)',fontStyle:'italic',marginTop:5,marginBottom:16,lineHeight:1.5}}>{contMeta.line}</p>}
+            {(cont.id==='lists'||cont.id==='causes') && namesTotal>0 && (
+              <div style={{display:'flex',alignItems:'center',gap:14}}>
+                <div style={{flex:1,height:2,background:'var(--rule)',borderRadius:1}}>
+                  <div style={{width:`${Math.round(namesWorked/namesTotal*100)}%`,height:'100%',background:'var(--terra)'}}/>
+                </div>
+                <Stamp>{namesWorked} of {namesTotal} names</Stamp>
               </div>
-              <Stamp>{namesWorked} of {namesTotal} names</Stamp>
-            </div>
+            )}
             <div style={{marginTop:14,display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
-              <div className="serif" style={{fontSize:14,color:'var(--ink-2)'}}>{namesWorked>0?`${namesWorked} of ${namesTotal} names worked`:'Begin with the resentment list'}</div>
+              <div className="serif" style={{fontSize:14,color:'var(--ink-2)'}}>{(cont.id==='lists'||cont.id==='causes')?(namesWorked>0?`${namesWorked} of ${namesTotal} names worked`:'Begin with the resentment list'):`Continue ${cont.title.toLowerCase()}`}</div>
               <span className="serif" style={{fontSize:18,color:'var(--terra-ink)'}}>→</span>
             </div>
           </Pressable>
@@ -1553,7 +1690,7 @@ function HomeScreen(){
           {practice.showMorning && (
             <Pressable onClick={()=>nav.goto('home','morning')} style={{display:'flex',alignItems:'center',gap:14,padding:'4px 0 16px',borderBottom:practice.showEvening?'1px solid var(--rule-soft)':'none'}}>
               <HandCheck checked={morningDone===morningTotal && morningTotal>0}/>
-              <div style={{flex:1}}>
+              <div style={{flex:1,minWidth:0}}>
                 <div className="serif" style={{fontSize:18,color:'var(--ink)'}}>Morning awakening</div>
                 <Stamp style={{marginTop:2,display:'block'}}>{morningDone} of {morningTotal} prayers {morningDone===morningTotal?'· complete':morningDone>0?'· in progress':'· not started'}</Stamp>
               </div>
@@ -1563,7 +1700,7 @@ function HomeScreen(){
           {practice.showEvening && (
             <Pressable onClick={()=>nav.goto('home','evening')} style={{display:'flex',alignItems:'center',gap:14,padding:'16px 0 4px'}}>
               <HandCheck checked={Object.values(todayEntry.eveningChecks||{}).filter(Boolean).length>0}/>
-              <div style={{flex:1}}>
+              <div style={{flex:1,minWidth:0}}>
                 <div className="serif" style={{fontSize:18,color:'var(--ink-2)'}}>Evening review</div>
                 <Stamp style={{marginTop:2,display:'block'}}>{Object.values(todayEntry.eveningChecks||{}).filter(Boolean).length} of 12 questions · tonight</Stamp>
               </div>
@@ -1757,7 +1894,7 @@ function JournalScreen(){
             ].filter(Boolean).join(' · ');
             return (
               <Pressable key={e.key} onClick={()=>nav.push('journal-day',{key:e.key})} style={{display:'flex',alignItems:'flex-start',gap:14,padding:'16px 24px',borderBottom:'1px solid var(--rule-soft)',textAlign:'left',width:'100%'}}>
-                <div style={{flex:1}}>
+                <div style={{flex:1,minWidth:0}}>
                   <div className="serif" style={{fontSize:17,color:'var(--ink)',fontWeight:400}}>{label}</div>
                   {e.intention && <p className="serif" style={{fontSize:14,color:'var(--ink-2)',fontStyle:'italic',marginTop:6,lineHeight:1.5,marginBottom:0,textWrap:'pretty'}}>"{e.intention.length>120?e.intention.slice(0,120)+'…':e.intention}"</p>}
                   {summary && <Stamp style={{marginTop:6,display:'block'}}>{summary}</Stamp>}
@@ -1868,18 +2005,8 @@ function StepsOverviewScreen(){
     {step:'Step 4 — Inventory',ids:['lists','causes','faults','fear1','fear2','sex']},
     {step:'Steps 8 & 9 — Amends',ids:['eighth']},
   ];
-  /** Compute a section's current state: 'done' (user marked), 'progress' (auto from data), 'undone'. */
-  const inferStatus = (id) => {
-    const override = (steps.sectionStatus||{})[id];
-    if(override) return override; // user-set
-    // auto from data presence
-    if(id==='lists' && steps.resentments.length>0) return 'progress';
-    if(id==='causes' && steps.causes.length>0) return 'progress';
-    if(id==='faults' && steps.faults.length>0) return 'progress';
-    if(id==='fear1' && steps.fears.length>0) return 'progress';
-    if(id==='eighth' && steps.amends.length>0) return 'progress';
-    return 'undone';
-  };
+  /** Shared with Home so the two screens never disagree about status. */
+  const inferStatus = (id) => inferSectionStatus(steps, id);
   const cycleStatus = (id, e) => {
     e.stopPropagation();
     const cur = inferStatus(id);
@@ -1912,16 +2039,16 @@ function StepsOverviewScreen(){
                 const s=STEP_SECTIONS.find(x=>x.id===id);
                 const status=inferStatus(id);
                 return (
-                  <div key={id} style={{display:'flex',alignItems:'flex-start',gap:14,padding:'16px 0',borderBottom:'1px solid var(--rule-soft)'}}>
-                    <span className="serif" style={{fontSize:12,color:'var(--terra)',fontStyle:'italic',width:22,marginTop:6,fontVariantNumeric:'oldstyle-nums'}}>{s.roman}.</span>
-                    <Pressable onClick={()=>nav.push(id)} style={{flex:1,padding:0,textAlign:'left'}}>
-                      <div className="serif" style={{fontSize:19,fontWeight:400,lineHeight:1.2,color:status==='undone'?'var(--muted)':'var(--ink)',textDecoration:status==='done'?'line-through':'none',textDecorationColor:'var(--sage)'}}>{s.title}</div>
+                  <div key={id} style={{display:'flex',alignItems:'flex-start',gap:14,padding:'16px 0',borderBottom:'1px solid var(--rule-soft)',minWidth:0}}>
+                    <span className="serif" style={{fontSize:12,color:'var(--terra)',fontStyle:'italic',width:22,flexShrink:0,marginTop:6,fontVariantNumeric:'oldstyle-nums'}}>{s.roman}.</span>
+                    <Pressable onClick={()=>nav.push(id)} style={{flex:1,minWidth:0,padding:0,textAlign:'left',display:'block'}}>
+                      <div className="serif" style={{fontSize:19,fontWeight:400,lineHeight:1.2,color:status==='undone'?'var(--muted)':'var(--ink)',textWrap:'pretty'}}>{s.title}</div>
                       <Stamp style={{marginTop:3,display:'block'}}>{s.pg}</Stamp>
                     </Pressable>
-                    <Pressable onClick={(e)=>cycleStatus(id,e)} style={{padding:'6px 10px',marginTop:2,borderRadius:999,border:'1px solid var(--rule-soft)'}}>
+                    <Pressable onClick={(e)=>cycleStatus(id,e)} style={{padding:'6px 10px',marginTop:2,borderRadius:999,border:'1px solid var(--rule-soft)',flexShrink:0,width:'auto'}}>
                       {sectionStatusBadge(status)}
                     </Pressable>
-                    <Pressable onClick={()=>nav.push(id)} style={{padding:'6px 4px',marginTop:6}}>
+                    <Pressable onClick={()=>nav.push(id)} style={{padding:'6px 4px',marginTop:6,flexShrink:0,width:'auto'}}>
                       <span className="serif" style={{color:'var(--muted)',fontSize:18}}>›</span>
                     </Pressable>
                   </div>
@@ -1934,7 +2061,7 @@ function StepsOverviewScreen(){
         <section style={{padding:'24px'}}>
           <Eyebrow style={{marginBottom:12}}>Sponsor</Eyebrow>
           <Pressable onClick={()=>nav.goto('more','sponsor')} style={{padding:'14px 16px',border:'1px solid var(--rule)',borderRadius:8,display:'flex',alignItems:'center',gap:12}}>
-            <div style={{flex:1}}>
+            <div style={{flex:1,minWidth:0}}>
               <div className="serif" style={{fontSize:16}}>Sponsor sharing</div>
               <Stamp style={{marginTop:2,display:'block'}}>2 sections shared · last update 5 days ago</Stamp>
             </div>
@@ -1975,6 +2102,9 @@ function ResentmentListScreen(){
         </section>
         <section style={{padding:'22px 24px 0'}}>
           <NoteBox>Put down every name that brings up resentment, anger, envy, or fear. Do not edit. If a name comes to mind, write it down.</NoteBox>
+        </section>
+        <section style={{padding:'18px 24px 0'}}>
+          <ButtonSerif primary onClick={()=>nav.push('lists-add')} style={{width:'100%'}}>+ add a name</ButtonSerif>
         </section>
         <section style={{padding:'20px 16px 0'}}>
           <SegPills value={filter} onChange={setFilter} options={[
@@ -2028,11 +2158,7 @@ function ResentmentListScreen(){
           </div>
         </section>
         <section style={{padding:'20px 24px 30px'}}>
-          <Pressable onClick={()=>nav.push('lists-add')} style={{display:'flex',alignItems:'center',gap:10,padding:'14px 0',borderTop:'1px dashed var(--rule)'}}>
-            <span className="serif" style={{fontSize:18,color:'var(--terra-ink)',width:22,textAlign:'left'}}>+</span>
-            <span className="serif" style={{fontSize:17,color:'var(--terra-ink)',fontStyle:'italic'}}>add a name</span>
-          </Pressable>
-          <NoteBox style={{marginTop:22}}>When you can sit prayerfully for half an hour with no further names coming to mind, you are done. Discuss with your sponsor before moving on.</NoteBox>
+          <NoteBox>When you can sit prayerfully for half an hour with no further names coming to mind, you are done. Discuss with your sponsor before moving on.</NoteBox>
         </section>
       </ScreenBody>
     </>
@@ -2075,16 +2201,19 @@ function ResentmentAddScreen(){
     nav.back();
   };
   const updateRow = (i, field, v) => setRows(prev=>{ const n=[...prev]; n[i]={...n[i],[field]:v}; return n; });
-  const addRow = ()=>setRows(prev=>[...prev,{name:'',note:''}]);
+  const addRow = ()=>setRows(prev=>[...prev, ...Array.from({length:5}, ()=>({name:'',note:''}))]);
   const removeRow = (i)=>setRows(prev=>prev.length>1?prev.filter((_,k)=>k!==i):prev);
 
   if(isEdit) return (
     <>
+      <datalist id="resent-name-suggestions">
+        {[...new Set(steps.resentments.map(r=>r.name).filter(Boolean))].map(n=><option key={n} value={n}/>)}
+      </datalist>
       <AppBar eyebrow="Edit entry" title="A name comes to mind" right={<ButtonText onClick={saveSingle}>save →</ButtonText>}/>
       <ScreenBody>
         <section style={{padding:'12px 24px 24px'}}>
           <Eyebrow style={{marginBottom:4}}>Name or description</Eyebrow>
-          <SerifInput value={name} onChange={setName} autoFocus placeholder="e.g. Dad, Mrs. K., the court…"/>
+          <SerifInput value={name} onChange={setName} autoFocus placeholder="e.g. Dad, Mrs. K., the court…" list="resent-name-suggestions"/>
           {nameDup && <p className="serif" style={{fontSize:13,color:'var(--terra-ink)',fontStyle:'italic',marginTop:6}}>Already on your list — you can still save it.</p>}
           <div style={{marginTop:32}}>
             <Eyebrow style={{marginBottom:12}}>What are they?</Eyebrow>
@@ -2100,9 +2229,18 @@ function ResentmentAddScreen(){
   );
 
   const filledCount = rows.filter(r=>r.name.trim()).length;
+  // Autocomplete source: every distinct name already on the resentment list.
+  // Helps prevent duplicate entries by surfacing existing names as the user types.
+  const nameSuggestions = React.useMemo(
+    ()=>[...new Set(steps.resentments.map(r=>r.name).filter(Boolean))].sort((a,b)=>a.localeCompare(b)),
+    [steps.resentments]
+  );
 
   return (
     <>
+      <datalist id="resent-name-suggestions">
+        {nameSuggestions.map(n=><option key={n} value={n}/>)}
+      </datalist>
       <AppBar eyebrow="New entries" title="Names come to mind" right={<ButtonText onClick={saveBulk}>save {filledCount>0?`(${filledCount}) `:''}→</ButtonText>}/>
       <ScreenBody>
         <section style={{padding:'12px 24px 0'}}>
@@ -2133,6 +2271,7 @@ function ResentmentAddScreen(){
               <div style={{minWidth:0}}>
                 <input value={row.name} onChange={(e)=>updateRow(i,'name',e.target.value)}
                   placeholder="Dad, Mrs. K., the court…" autoFocus={i===0}
+                  list="resent-name-suggestions" autoComplete="off"
                   style={{width:'100%',padding:'8px 0',background:'transparent',border:0,borderBottom:'1px solid var(--rule-soft)',fontFamily:'Newsreader,Georgia,serif',fontSize:16,color:'var(--ink)',outline:'none'}}/>
                 {rowDup && <span className="serif" style={{fontSize:12,color:'var(--terra-ink)',fontStyle:'italic'}}>already on list</span>}
               </div>
@@ -2149,7 +2288,7 @@ function ResentmentAddScreen(){
         <section style={{padding:'12px 24px 0'}}>
           <Pressable onClick={addRow} style={{display:'flex',alignItems:'center',gap:10,padding:'14px 0'}}>
             <span className="serif" style={{fontSize:18,color:'var(--terra-ink)'}}>+</span>
-            <span className="serif" style={{fontSize:15,color:'var(--terra-ink)',fontStyle:'italic'}}>add row</span>
+            <span className="serif" style={{fontSize:15,color:'var(--terra-ink)',fontStyle:'italic'}}>add 5 more rows</span>
           </Pressable>
         </section>
         <section style={{padding:'24px 24px 36px'}}>
@@ -2194,7 +2333,7 @@ function CausesScreen(){
           <section key={g.name} style={{padding:'32px 0 0'}}>
             <div style={{padding:'0 24px 8px',display:'flex',alignItems:'baseline',gap:12}}>
               <span className="serif" style={{fontSize:12,color:'var(--terra)',fontStyle:'italic',fontVariantNumeric:'oldstyle-nums',width:18}}>{romanize(gi+1)}.</span>
-              <div style={{flex:1}}>
+              <div style={{flex:1,minWidth:0}}>
                 <div className="eyebrow" style={{marginBottom:4}}>Resentful at</div>
                 <h3 className="serif" style={{fontSize:22,fontWeight:400,letterSpacing:'-0.005em',lineHeight:1.2}}>{g.name}</h3>
               </div>
@@ -2202,14 +2341,13 @@ function CausesScreen(){
             </div>
             <Hairline style={{margin:'14px 24px 0'}} soft/>
             {g.rows.map((c,i)=>(
-              <div key={c.id} style={{padding:'14px 24px',borderBottom:'1px solid var(--rule-soft)',display:'flex',alignItems:'flex-start',gap:8}}>
-                <Pressable onClick={()=>nav.push('cause-edit',{id:c.id})} style={{flex:1,textAlign:'left',padding:0}}>
-                  <div style={{display:'flex',alignItems:'flex-start',gap:12}}>
-                    <span className="serif" style={{fontSize:18,color:'var(--ink-2)',marginTop:1}}>"</span>
-                    <p className="serif" style={{flex:1,fontSize:17,lineHeight:1.4,color:'var(--ink)',textWrap:'pretty',margin:0}}>{c.cause}</p>
-                    {c.flag&&<Stamp style={{color:'var(--terra-ink)',marginTop:4}}>flag</Stamp>}
-                  </div>
-                  <div style={{marginTop:10,marginLeft:20,display:'flex',flexWrap:'wrap',gap:0}}>
+              <div key={c.id} style={{padding:'14px 24px',borderBottom:'1px solid var(--rule-soft)',display:'flex',alignItems:'flex-start',gap:8,minWidth:0}}>
+                <Pressable onClick={()=>nav.push('cause-edit',{id:c.id})} style={{flex:1,textAlign:'left',padding:0,minWidth:0,display:'block'}}>
+                  {/* single block paragraph — no nested flex — so long causes flow full-width and never pinch to one word per line */}
+                  <p className="serif" style={{display:'block',width:'100%',fontSize:17,lineHeight:1.4,color:'var(--ink)',textWrap:'pretty',overflowWrap:'break-word',margin:0}}>
+                    <span style={{color:'var(--ink-2)'}}>&ldquo;</span>{c.cause}
+                  </p>
+                  <div style={{marginTop:10,display:'flex',flexWrap:'wrap',gap:0,width:'100%'}}>
                     {INSTINCTS.filter(ins=>c[ins.key]).map((ins,k,arr)=>(
                       <Fragment key={ins.key}>
                         <span style={{fontFamily:'Newsreader,Georgia,serif',fontSize:13,fontStyle:'italic',color:'var(--terra-ink)',lineHeight:1.4}}>{ins.short}</span>
@@ -2218,7 +2356,7 @@ function CausesScreen(){
                     ))}
                   </div>
                 </Pressable>
-                <Pressable onClick={()=>{ if(confirm('Remove this cause?')) removeItem('causes', c.id); }} style={{padding:'4px 6px'}}>
+                <Pressable onClick={()=>{ if(confirm('Remove this cause?')) removeItem('causes', c.id); }} style={{padding:'4px 6px',flexShrink:0,width:'auto'}}>
                   <span className="serif" style={{fontSize:15,color:'var(--faint)'}}>✕</span>
                 </Pressable>
               </div>
@@ -2260,10 +2398,9 @@ function CauseEditScreen(){
   const nameForHeader=isAdd?((nav.params&&nav.params.name)||''):(c?c.name:'');
   const [cause,setCause]=useState(c?c.cause:'');
   const [aff,setAff]=useState(()=>INSTINCTS.reduce((m,ins)=>{m[ins.key]=c?!!c[ins.key]:false;return m;},{}));
-  const [flag,setFlag]=useState(c?!!c.flag:false);
   const save=()=>{
     if(!cause.trim()){ alert('Please enter the cause before saving.'); return; }
-    const data = { name:nameForHeader, cause:cause.trim(), ...aff, flag };
+    const data = { name:nameForHeader, cause:cause.trim(), ...aff };
     if(isAdd) addItem('causes', data);
     else updateItem('causes', c.id, data);
     nav.back();
@@ -2288,12 +2425,6 @@ function CauseEditScreen(){
             </Pressable>
           ))}
         </section>
-        <section style={{padding:'24px'}}>
-          <Pressable onClick={()=>setFlag(f=>!f)} style={{display:'flex',alignItems:'center',gap:14,padding:'14px 16px',border:`1px solid ${flag?'var(--terra)':'var(--rule)'}`,borderRadius:8,background:flag?'var(--terra-soft)':'transparent'}}>
-            <div style={{width:14,height:14,borderRadius:'50%',border:`1.5px solid ${flag?'var(--terra-ink)':'var(--muted)'}`,background:flag?'var(--terra-ink)':'transparent'}}/>
-            <span className="serif" style={{flex:1,fontSize:16,color:flag?'var(--terra-ink)':'var(--ink-2)'}}>Bring this up with my sponsor</span>
-          </Pressable>
-        </section>
         {!isAdd && (
           <section style={{padding:'4px 24px 36px',textAlign:'center'}}>
             <Pressable onClick={()=>{ if(confirm('Remove this cause?')){ removeItem('causes', c.id); nav.back(); } }} style={{padding:'12px 0'}}>
@@ -2309,56 +2440,84 @@ function CauseEditScreen(){
 function FaultsScreen(){
   const nav=useNav();
   const {steps, removeItem} = useSteps();
-  const remainingCauses = steps.causes.filter(c => !steps.faults.some(f=>f.causeId===c.id));
+  // Auto-populate principle: every cause is available to work. A "fault" entry
+  // is keyed to its causeId. If the source cause was later removed, we still keep
+  // the fault entry (preserve downstream work) and flag it as orphaned.
+  const causeById = React.useMemo(()=>Object.fromEntries(steps.causes.map(c=>[c.id,c])),[steps.causes]);
+  const worked = steps.faults;
+  const workedIds = new Set(worked.map(f=>f.causeId));
+  const remainingCauses = steps.causes.filter(c=>!workedIds.has(c.id));
+  const countAnswered = (f)=>FAULTS_ALL_KEYS.filter(k=>f[k] && String(f[k]).trim()).length;
   return (
     <>
       <AppBar eyebrow="III · Step 4 · pg 66–67" title="Our faults"/>
       <ScreenBody>
         <section style={{padding:'4px 24px 0'}}>
-          <Scripture cite="Big Book, pg 67">"Where had we been selfish, dishonest, self-seeking and frightened?"</Scripture>
+          <Scripture cite="Big Book, pg 66–67">"We turned back to the list… we resolutely looked for our own mistakes. Where were we to blame?"</Scripture>
         </section>
         <section style={{padding:'22px 24px 0'}}>
-          <NoteBox>For each cause, work through four questions. Answers must focus solely on you — not the other person.</NoteBox>
+          <NoteBox>
+            {FAULTS_INSTRUCTIONS.map((line,i)=>(
+              <span key={i} style={{display:'block',marginTop:i?6:0}}>{line}</span>
+            ))}
+          </NoteBox>
         </section>
-        {steps.faults.length===0 && (
+        {worked.length===0 && (
           <section style={{padding:'24px',textAlign:'center'}}>
             <p className="serif" style={{fontSize:15,color:'var(--muted)',fontStyle:'italic',lineHeight:1.55}}>
               {steps.causes.length===0
                 ? 'Complete Causes & affects first — faults builds on each cause.'
-                : 'Tap "work the next cause" below to begin.'}
+                : 'Tap a cause below to begin working it.'}
             </p>
           </section>
         )}
-        {steps.faults.map(f=>(
-          <section key={f.id} style={{padding:'28px 24px 0',position:'relative'}}>
-            <div style={{display:'flex',alignItems:'baseline',gap:8}}>
-              <Eyebrow style={{marginBottom:4,flex:1}}>{f.name}</Eyebrow>
-              <Pressable onClick={()=>{ if(confirm('Remove this fault entry?')) removeItem('faults', f.id); }} style={{padding:'2px 6px'}}>
-                <span className="serif" style={{fontSize:14,color:'var(--faint)'}}>✕</span>
-              </Pressable>
-            </div>
-            <p className="serif" style={{fontSize:17,color:'var(--ink)',lineHeight:1.4,fontStyle:'italic',marginBottom:18,textWrap:'pretty'}}>"{f.cause}"</p>
-            {[['Selfish','selfish','What did I want? Why?'],['Dishonest','dishonest','What lie did I tell myself?'],['Self-seeking','self_seeking','What did I do or omit?'],['Frightened','frightened','What was I afraid of?']].map(([label,key,hint])=>(
-              <div key={key} style={{marginBottom:24}}>
-                <div style={{display:'flex',alignItems:'baseline',gap:10,marginBottom:6}}>
-                  <span className="serif" style={{fontSize:16,color:'var(--terra-ink)',fontStyle:'italic',fontWeight:500}}>{label}</span>
-                  <Stamp>· {hint}</Stamp>
+        {worked.length>0 && (
+          <section style={{padding:'28px 24px 0'}}>
+            <Eyebrow style={{marginBottom:6}}>Worked · {worked.length}</Eyebrow>
+            {worked.map(f=>{
+              const ans=countAnswered(f);
+              const total=FAULTS_ALL_KEYS.length;
+              const orphan=!causeById[f.causeId];
+              return (
+                <div key={f.id} style={{display:'flex',alignItems:'flex-start',gap:12,padding:'14px 0',borderBottom:'1px solid var(--rule-soft)',minWidth:0}}>
+                  <Pressable onClick={()=>nav.push('fault-add',{id:f.id})} style={{flex:1,textAlign:'left',padding:0,minWidth:0}}>
+                    <div style={{display:'flex',alignItems:'baseline',gap:8,minWidth:0}}>
+                      <span className="serif" style={{fontSize:16,color:'var(--ink)',lineHeight:1.3,flex:1,minWidth:0,textWrap:'pretty'}}>{f.name}</span>
+                    </div>
+                    <p className="serif" style={{fontSize:14,color:'var(--muted)',fontStyle:'italic',lineHeight:1.4,margin:'2px 0 0',textWrap:'pretty'}}>"{f.cause}"</p>
+                    <div style={{marginTop:5,display:'flex',alignItems:'center',gap:8}}>
+                      <Stamp color={ans===total?'var(--terra-ink)':'var(--muted)'}>{ans} of {total} answered</Stamp>
+                      {orphan && <Stamp color="var(--faint)">· source cause removed</Stamp>}
+                    </div>
+                  </Pressable>
+                  <Pressable onClick={()=>{ if(confirm('Remove this fault entry? Your written answers will be lost.')) removeItem('faults', f.id); }} style={{padding:'2px 6px',flexShrink:0}}>
+                    <span className="serif" style={{fontSize:14,color:'var(--faint)'}}>✕</span>
+                  </Pressable>
                 </div>
-                <p className="serif" style={{fontSize:17,lineHeight:1.55,color:'var(--ink)',borderBottom:'1px solid var(--rule-soft)',paddingBottom:14,textWrap:'pretty',margin:0}}>{f[key]||<span style={{color:'var(--faint)',fontStyle:'italic'}}>— not yet —</span>}</p>
-              </div>
+              );
+            })}
+          </section>
+        )}
+        {remainingCauses.length>0 && (
+          <section style={{padding:'28px 24px 0'}}>
+            <Eyebrow style={{marginBottom:6}}>Still to work · {remainingCauses.length}</Eyebrow>
+            {remainingCauses.map(c=>(
+              <Pressable key={c.id} onClick={()=>nav.push('fault-add',{causeId:c.id})} style={{display:'flex',alignItems:'flex-start',gap:12,padding:'14px 0',borderBottom:'1px solid var(--rule-soft)',textAlign:'left',minWidth:0}}>
+                <span className="serif" style={{fontSize:16,color:'var(--terra-ink)',flexShrink:0,marginTop:1}}>+</span>
+                <span style={{flex:1,minWidth:0}}>
+                  <span className="serif" style={{fontSize:16,color:'var(--ink)',lineHeight:1.3}}>{c.name}</span>
+                  <span className="serif" style={{display:'block',fontSize:14,color:'var(--muted)',fontStyle:'italic',lineHeight:1.4,marginTop:2,textWrap:'pretty'}}>"{c.cause}"</span>
+                </span>
+              </Pressable>
             ))}
           </section>
-        ))}
-        <section style={{padding:'24px'}}>
-          {remainingCauses.length>0 ? (
-            <Pressable onClick={()=>nav.push('fault-add')} style={{display:'flex',alignItems:'center',gap:12,padding:'14px 0',borderTop:'1px dashed var(--rule)'}}>
-              <span className="serif" style={{fontSize:18,color:'var(--terra-ink)',width:12}}>+</span>
-              <span className="serif" style={{fontSize:17,color:'var(--terra-ink)',fontStyle:'italic'}}>work the next cause ({remainingCauses.length} remaining)</span>
-            </Pressable>
-          ) : steps.causes.length>0 && (
-            <p className="serif" style={{fontSize:14,color:'var(--muted)',fontStyle:'italic',textAlign:'center',padding:'14px 0',borderTop:'1px dashed var(--rule)'}}>All causes worked ✓</p>
-          )}
-        </section>
+        )}
+        {remainingCauses.length===0 && steps.causes.length>0 && (
+          <section style={{padding:'24px'}}>
+            <p className="serif" style={{fontSize:14,color:'var(--muted)',fontStyle:'italic',textAlign:'center',padding:'14px 0',borderTop:'1px dashed var(--rule)'}}>All causes worked ✓ — discuss with your sponsor.</p>
+          </section>
+        )}
+        <section style={{padding:'8px 24px 36px'}}/>
       </ScreenBody>
     </>
   );
@@ -2366,61 +2525,70 @@ function FaultsScreen(){
 
 function FaultAddScreen(){
   const nav=useNav();
-  const {steps, addItem} = useSteps();
-  const remaining = steps.causes.filter(c => !steps.faults.some(f=>f.causeId===c.id));
-  const [causeId, setCauseId] = useState(remaining[0]?remaining[0].id:'');
-  const cause = steps.causes.find(c=>c.id===causeId);
-  const [selfish, setSelfish] = useState('');
-  const [dishonest, setDishonest] = useState('');
-  const [selfSeeking, setSelfSeeking] = useState('');
-  const [frightened, setFrightened] = useState('');
+  const {steps, addItem, updateItem} = useSteps();
+  // Two entry modes: editing an existing fault (params.id) or working a specific
+  // cause (params.causeId). Either way we resolve the cause + any saved answers.
+  const existing = nav.params&&nav.params.id ? steps.faults.find(f=>f.id===nav.params.id) : null;
+  const causeId = existing ? existing.causeId : (nav.params&&nav.params.causeId);
+  const cause = steps.causes.find(c=>c.id===causeId) || (existing?{id:existing.causeId,name:existing.name,cause:existing.cause}:null);
+
+  const [answers, setAnswers] = useState(()=>{
+    const seed={};
+    FAULTS_ALL_KEYS.forEach(k=>{ seed[k]=existing&&existing[k]?existing[k]:''; });
+    return seed;
+  });
+  const [openKey, setOpenKey] = useState(null); // only one question open at a time
+  const setAnswer=(k,v)=>setAnswers(a=>({...a,[k]:v}));
+  const toggle=(k)=>setOpenKey(cur=>cur===k?null:k);
+
   const save=()=>{
-    if(!cause){ alert('Pick a cause first.'); return; }
-    addItem('faults', { causeId:cause.id, name:cause.name, cause:cause.cause,
-      selfish, dishonest, self_seeking:selfSeeking, frightened });
+    if(!cause){ alert('No cause selected.'); return; }
+    const data={ causeId:cause.id, name:cause.name, cause:cause.cause, ...answers };
+    if(existing) updateItem('faults', existing.id, data);
+    else addItem('faults', data);
     nav.back();
   };
+
+  if(!cause){
+    return (<><AppBar eyebrow="Our faults" title="No cause selected"/>
+      <ScreenBody><section style={{padding:'24px'}}>
+        <p className="serif" style={{color:'var(--muted)',fontStyle:'italic'}}>Pick a cause from the Our Faults screen to work it.</p>
+      </section></ScreenBody></>);
+  }
+
+  const answeredCount=FAULTS_ALL_KEYS.filter(k=>answers[k]&&answers[k].trim()).length;
+
   return (
     <>
-      <AppBar eyebrow="New fault" title="Work a cause" right={<ButtonText onClick={save}>save →</ButtonText>}/>
+      <AppBar eyebrow={`Resentful at ${cause.name}`} title="Our faults" right={<ButtonText onClick={save}>save →</ButtonText>}/>
       <ScreenBody>
         <section style={{padding:'12px 24px 0'}}>
-          {remaining.length===0 ? (
-            <p className="serif" style={{color:'var(--muted)',fontStyle:'italic'}}>No causes left to work.</p>
-          ) : (
-            <>
-              <Eyebrow style={{marginBottom:8}}>Pick a cause</Eyebrow>
-              <select value={causeId} onChange={e=>setCauseId(e.target.value)}
-                style={{width:'100%',padding:'8px 0',background:'transparent',border:0,borderBottom:'1px solid var(--rule)',fontFamily:'Newsreader,Georgia,serif',fontSize:17,color:'var(--ink)',outline:'none'}}>
-                {remaining.map(c=><option key={c.id} value={c.id}>{c.name} — {c.cause.slice(0,40)}{c.cause.length>40?'…':''}</option>)}
-              </select>
-            </>
-          )}
+          <p className="serif" style={{fontSize:17,color:'var(--ink)',lineHeight:1.45,fontStyle:'italic',textWrap:'pretty',margin:0}}>"{cause.cause}"</p>
+          <Stamp style={{marginTop:8,display:'block'}}>{answeredCount} of {FAULTS_ALL_KEYS.length} answered · answers focus on me, not them</Stamp>
         </section>
-        {cause && (
-          <>
-            <section style={{padding:'24px 24px 0'}}>
-              <Eyebrow style={{marginBottom:6}}>Selfish</Eyebrow>
-              <Stamp style={{marginBottom:8,display:'block'}}>What did I want? Why?</Stamp>
-              <SerifTextarea value={selfish} onChange={setSelfish} minRows={2}/>
-            </section>
-            <section style={{padding:'24px 24px 0'}}>
-              <Eyebrow style={{marginBottom:6}}>Dishonest</Eyebrow>
-              <Stamp style={{marginBottom:8,display:'block'}}>What lie did I tell myself?</Stamp>
-              <SerifTextarea value={dishonest} onChange={setDishonest} minRows={2}/>
-            </section>
-            <section style={{padding:'24px 24px 0'}}>
-              <Eyebrow style={{marginBottom:6}}>Self-seeking</Eyebrow>
-              <Stamp style={{marginBottom:8,display:'block'}}>What did I do or omit?</Stamp>
-              <SerifTextarea value={selfSeeking} onChange={setSelfSeeking} minRows={2}/>
-            </section>
-            <section style={{padding:'24px 24px 40px'}}>
-              <Eyebrow style={{marginBottom:6}}>Frightened</Eyebrow>
-              <Stamp style={{marginBottom:8,display:'block'}}>What was I afraid of?</Stamp>
-              <SerifTextarea value={frightened} onChange={setFrightened} minRows={2}/>
-            </section>
-          </>
-        )}
+        {FAULTS_GROUPS.map(g=>(
+          <section key={g.key} style={{padding:'26px 24px 0'}}>
+            <div style={{display:'flex',alignItems:'baseline',gap:10,marginBottom:2}}>
+              <span className="serif" style={{fontSize:17,color:'var(--terra-ink)',fontStyle:'italic',fontWeight:500}}>{g.label}</span>
+              <Stamp>{g.cite}</Stamp>
+            </div>
+            <p className="serif" style={{fontSize:14,color:'var(--muted)',fontStyle:'italic',lineHeight:1.5,margin:'0 0 8px',textWrap:'pretty'}}>{g.intro}</p>
+            {g.questions.map((q,i)=>(
+              <ExpandableAnswer key={q.key}
+                n={i+1}
+                question={q.q}
+                hint={q.hint}
+                value={answers[q.key]}
+                open={openKey===q.key}
+                onToggle={()=>toggle(q.key)}
+                onChange={(v)=>setAnswer(q.key,v)}
+              />
+            ))}
+          </section>
+        ))}
+        <section style={{padding:'28px 24px 40px'}}>
+          <ButtonSerif primary onClick={save} style={{width:'100%'}}>Save answers</ButtonSerif>
+        </section>
       </ScreenBody>
     </>
   );
@@ -2429,67 +2597,117 @@ function FaultAddScreen(){
 function Fear1Screen(){
   const nav=useNav();
   const {steps, removeItem} = useSteps();
+  // Auto-populate: one fear row per cause from Causes & Effects. A fear entry is
+  // linked to its cause by causeId. Existing entries are preserved (merge, never
+  // delete); if a source cause was removed we keep the entry and flag it. Manual
+  // "standalone" fears (no causeId) are kept too — the Book asks us to add fears
+  // "even though we had no resentment in connection with them." (pg 68)
+  const fearByCauseId = React.useMemo(()=>{
+    const m={}; steps.fears.forEach(f=>{ if(f.causeId) m[f.causeId]=f; }); return m;
+  },[steps.fears]);
+  const causeRows = steps.causes.map(c=>({cause:c, fear:fearByCauseId[c.id]||null}));
+  const standalone = steps.fears.filter(f=>!f.causeId);
+  const isDone=(f)=> f && (f.categories||[]).length>0;
+
+  // Category totals across all fear entries.
   const totals={};
-  steps.fearCategories.forEach(c=>{totals[c]=steps.fears.filter(f=>(f.categories||[]).includes(c)).length;});
+  steps.fearCategories.forEach(cat=>{ totals[cat]=steps.fears.filter(f=>(f.categories||[]).includes(cat)).length; });
   const maxT=Math.max(1,...Object.values(totals));
+  const workedCount=causeRows.filter(r=>isDone(r.fear)).length + standalone.filter(isDone).length;
+  const totalCount=causeRows.length + standalone.length;
+
   return (
     <>
       <AppBar eyebrow="IV · Step 4 · pg 67–68" title="Fear inventory"/>
       <ScreenBody>
         <section style={{padding:'4px 24px 0'}}>
-          <Scripture cite="Big Book, pg 68">"We reviewed our fears thoroughly. We put them on paper, even though we had no resentment in connection with them."</Scripture>
+          <Scripture cite="Big Book, pg 67–68">"Where had we been selfish, dishonest, self-seeking and frightened? We reviewed our fears thoroughly. We asked ourselves why we had them."</Scripture>
         </section>
-        <section style={{padding:'24px 24px 0'}}>
-          <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',marginBottom:14}}>
-            <Eyebrow>Patterns · totals by category</Eyebrow>
-            <ButtonText onClick={()=>nav.push('fear-categories')}>edit categories →</ButtonText>
-          </div>
-          <div style={{display:'flex',flexDirection:'column',gap:8}}>
-            {steps.fearCategories.map(cat=>(
-              <div key={cat} style={{display:'flex',alignItems:'baseline',gap:14,padding:'6px 0'}}>
-                <div className="serif" style={{flex:1,fontSize:16,color:'var(--ink-2)'}}>{cat}</div>
-                <div style={{width:80,height:1,background:'var(--rule)',position:'relative',alignSelf:'center'}}>
-                  <div style={{position:'absolute',left:0,top:-1,bottom:-1,width:`${totals[cat]/maxT*100}%`,background:'var(--terra)',height:3}}/>
+        <section style={{padding:'20px 24px 0'}}>
+          <NoteBox>
+            <span style={{display:'block'}}>Each name and cause carries forward from Causes &amp; affects. For each, mark the fear categories that color your memory of it.</span>
+            <span style={{display:'block',marginTop:6}}>Add fears even where you had no resentment. Then discuss with your sponsor.</span>
+          </NoteBox>
+        </section>
+
+        {totalCount>0 && (
+          <section style={{padding:'24px 24px 0'}}>
+            <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',marginBottom:14}}>
+              <Eyebrow>Patterns · totals by category</Eyebrow>
+              <ButtonText onClick={()=>nav.push('fear-categories')}>edit categories →</ButtonText>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              {steps.fearCategories.map(cat=>(
+                <div key={cat} style={{display:'flex',alignItems:'baseline',gap:14,padding:'6px 0',minWidth:0}}>
+                  <div className="serif" style={{flex:1,minWidth:0,fontSize:16,color:'var(--ink-2)'}}>{cat}</div>
+                  <div style={{width:80,height:1,background:'var(--rule)',position:'relative',alignSelf:'center',flexShrink:0}}>
+                    <div style={{position:'absolute',left:0,top:-1,bottom:-1,width:`${totals[cat]/maxT*100}%`,background:'var(--terra)',height:3}}/>
+                  </div>
+                  <span className="serif" style={{fontSize:16,color:'var(--ink)',width:20,textAlign:'right',fontVariantNumeric:'oldstyle-nums',flexShrink:0}}>{totals[cat]||'–'}</span>
                 </div>
-                <span className="serif" style={{fontSize:16,color:'var(--ink)',width:20,textAlign:'right',fontVariantNumeric:'oldstyle-nums'}}>{totals[cat]||'–'}</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <section style={{padding:'20px 24px 0'}}>
+          <ButtonSerif primary onClick={()=>nav.push('fear-add')} style={{width:'100%'}}>+ add a fear with no resentment behind it</ButtonSerif>
         </section>
-        <Hairline style={{margin:'32px 24px 0'}}/>
+        <Hairline style={{margin:'24px 24px 0'}}/>
         <section style={{padding:'24px 24px 0'}}>
-          <Eyebrow style={{marginBottom:16}}>Entries · {steps.fears.length}</Eyebrow>
-          {steps.fears.length===0 && (
-            <p className="serif" style={{fontSize:15,color:'var(--muted)',fontStyle:'italic',lineHeight:1.55,textAlign:'center',padding:'12px 0'}}>
-              No fears yet. Tap "add a fear" below.
+          <Eyebrow style={{marginBottom:6}}>From your causes · {workedCount} of {totalCount} worked</Eyebrow>
+          {causeRows.length===0 && (
+            <p className="serif" style={{fontSize:15,color:'var(--muted)',fontStyle:'italic',lineHeight:1.55,padding:'8px 0'}}>
+              Complete Causes &amp; affects first — your names and causes flow here automatically.
             </p>
           )}
-          {steps.fears.map(f=>(
-            <div key={f.id} style={{padding:'14px 0',borderBottom:'1px solid var(--rule-soft)',display:'flex',alignItems:'flex-start',gap:8}}>
-              <Pressable onClick={()=>nav.push('fear-edit',{id:f.id})} style={{flex:1,padding:0,textAlign:'left'}}>
-                <div className="serif" style={{fontSize:17,color:'var(--ink)',lineHeight:1.3}}>{f.name}</div>
-                {f.cause&&<p className="serif" style={{fontSize:14,color:'var(--muted)',fontStyle:'italic',marginTop:3,marginBottom:0}}>{f.cause}</p>}
-                <div style={{marginTop:6,display:'flex',flexWrap:'wrap'}}>
-                  {(f.categories||[]).map((c,k,arr)=>(
-                    <Fragment key={c}>
-                      <span className="serif" style={{fontSize:13,color:'var(--terra-ink)',fontStyle:'italic'}}>{c.toLowerCase()}</span>
-                      {k<arr.length-1&&<span style={{margin:'0 8px',color:'var(--rule)'}}>·</span>}
-                    </Fragment>
-                  ))}
-                </div>
+          {causeRows.map(({cause,fear})=>{
+            const done=isDone(fear);
+            const cats=fear?(fear.categories||[]):[];
+            return (
+              <Pressable key={cause.id} onClick={()=>nav.push('fear-edit',{causeId:cause.id})} style={{display:'flex',alignItems:'flex-start',gap:12,padding:'14px 0',borderBottom:'1px solid var(--rule-soft)',textAlign:'left',minWidth:0}}>
+                <span aria-hidden="true" style={{flexShrink:0,marginTop:3,width:16,height:16,borderRadius:'50%',border:`1.5px solid ${done?'var(--terra-ink)':'var(--muted)'}`,background:done?'var(--terra-ink)':'transparent',display:'inline-flex',alignItems:'center',justifyContent:'center'}}>
+                  {done&&<span style={{color:'var(--paper)',fontSize:10,lineHeight:1}}>✓</span>}
+                </span>
+                <span style={{flex:1,minWidth:0}}>
+                  <span className="serif" style={{display:'block',fontSize:16,color:'var(--ink)',lineHeight:1.3}}>{cause.name}</span>
+                  <span className="serif" style={{display:'block',fontSize:14,color:'var(--muted)',fontStyle:'italic',lineHeight:1.4,marginTop:2,textWrap:'pretty'}}>"{cause.cause}"</span>
+                  {cats.length>0 && (
+                    <span className="serif" style={{display:'block',fontSize:13,color:'var(--terra-ink)',fontStyle:'italic',marginTop:4,textWrap:'pretty'}}>{cats.map(c=>c.toLowerCase()).join(' · ')}</span>
+                  )}
+                </span>
               </Pressable>
-              <Pressable onClick={()=>{ if(confirm(`Remove "${f.name}" from fears?`)) removeItem('fears', f.id); }} style={{padding:'4px 6px'}}>
-                <span className="serif" style={{fontSize:15,color:'var(--faint)'}}>✕</span>
-              </Pressable>
-            </div>
-          ))}
+            );
+          })}
         </section>
-        <section style={{padding:'24px'}}>
-          <Pressable onClick={()=>nav.push('fear-add')} style={{display:'flex',alignItems:'center',gap:12,padding:'14px 0',borderTop:'1px dashed var(--rule)'}}>
-            <span className="serif" style={{fontSize:18,color:'var(--terra-ink)',width:12}}>+</span>
-            <span className="serif" style={{fontSize:17,color:'var(--terra-ink)',fontStyle:'italic'}}>add a fear</span>
-          </Pressable>
+
+        <section style={{padding:'24px 24px 0'}}>
+          <Eyebrow style={{marginBottom:6}}>Other fears · {standalone.length}</Eyebrow>
+          {standalone.map(f=>{
+            const done=isDone(f);
+            const cats=f.categories||[];
+            return (
+              <div key={f.id} style={{display:'flex',alignItems:'flex-start',gap:12,padding:'14px 0',borderBottom:'1px solid var(--rule-soft)',minWidth:0}}>
+                <Pressable onClick={()=>nav.push('fear-edit',{id:f.id})} style={{flex:1,minWidth:0,padding:0,textAlign:'left',display:'block'}}>
+                  <span style={{display:'flex',alignItems:'flex-start',gap:12,minWidth:0}}>
+                    <span aria-hidden="true" style={{flexShrink:0,marginTop:3,width:16,height:16,borderRadius:'50%',border:`1.5px solid ${done?'var(--terra-ink)':'var(--muted)'}`,background:done?'var(--terra-ink)':'transparent',display:'inline-flex',alignItems:'center',justifyContent:'center'}}>
+                      {done&&<span style={{color:'var(--paper)',fontSize:10,lineHeight:1}}>✓</span>}
+                    </span>
+                    <span style={{flex:1,minWidth:0}}>
+                      <span className="serif" style={{display:'block',fontSize:16,color:'var(--ink)',lineHeight:1.3}}>{f.name}</span>
+                      {f.cause&&<span className="serif" style={{display:'block',fontSize:14,color:'var(--muted)',fontStyle:'italic',lineHeight:1.4,marginTop:2,textWrap:'pretty'}}>{f.cause}</span>}
+                      {cats.length>0&&<span className="serif" style={{display:'block',fontSize:13,color:'var(--terra-ink)',fontStyle:'italic',marginTop:4,textWrap:'pretty'}}>{cats.map(c=>c.toLowerCase()).join(' · ')}</span>}
+                    </span>
+                  </span>
+                </Pressable>
+                <Pressable onClick={()=>{ if(confirm(`Remove "${f.name}" from fears?`)) removeItem('fears', f.id); }} style={{padding:'4px 6px',flexShrink:0,width:'auto'}}>
+                  <span className="serif" style={{fontSize:15,color:'var(--faint)'}}>✕</span>
+                </Pressable>
+              </div>
+            );
+          })}
         </section>
+        <section style={{padding:'8px 24px 36px'}}/>
       </ScreenBody>
     </>
   );
@@ -2498,94 +2716,278 @@ function Fear1Screen(){
 function FearEditScreen(){
   const nav=useNav();
   const {steps, addItem, updateItem, removeItem} = useSteps();
-  const existing=steps.fears.find(f=>f.id===(nav.params&&nav.params.id));
-  const isNew=!existing;
-  const [name,setName]=useState(existing?existing.name:'');
-  const [cause,setCause]=useState(existing?existing.cause:'');
+  // Resolve target: editing an existing fear (id), working a specific cause
+  // (causeId), or a brand-new standalone fear (neither).
+  const byId = nav.params&&nav.params.id ? steps.fears.find(f=>f.id===nav.params.id) : null;
+  const causeId = nav.params&&nav.params.causeId;
+  const fromCause = causeId ? steps.causes.find(c=>c.id===causeId) : null;
+  const existing = byId || (causeId ? steps.fears.find(f=>f.causeId===causeId) : null);
+  const linkedCause = fromCause || (existing&&existing.causeId ? steps.causes.find(c=>c.id===existing.causeId) : null);
+  const isCauseLinked = !!causeId || !!(existing&&existing.causeId);
+
+  const [name,setName]=useState(existing?existing.name:(fromCause?fromCause.name:''));
+  const [cause,setCause]=useState(existing?existing.cause:(fromCause?fromCause.cause:''));
   const [cats,setCats]=useState(new Set(existing?existing.categories:[]));
   const toggle=(c)=>setCats(s=>{const n=new Set(s);n.has(c)?n.delete(c):n.add(c);return n;});
+
   const save=()=>{
     if(!name.trim()){ alert('Please add a name or situation.'); return; }
-    const data = { name:name.trim(), cause:cause.trim(), categories:[...cats] };
-    if(isNew) addItem('fears', data);
-    else updateItem('fears', existing.id, data);
+    const data={ name:name.trim(), cause:cause.trim(), categories:[...cats] };
+    if(isCauseLinked) data.causeId = causeId || existing.causeId;
+    if(existing) updateItem('fears', existing.id, data);
+    else addItem('fears', data);
     nav.back();
   };
+
+  const title = isCauseLinked ? 'Fears for this cause' : (existing?'Edit fear':'A fear comes to mind');
+
   return (
     <>
-      <AppBar eyebrow={isNew?'New fear':'Edit fear'} title={isNew?'A fear comes to mind':'Edit'} right={<ButtonText onClick={save}>save →</ButtonText>}/>
+      <AppBar eyebrow={linkedCause?`Resentful at ${linkedCause.name}`:(existing?'Edit fear':'New fear')} title={title} right={<ButtonText onClick={save}>save →</ButtonText>}/>
       <ScreenBody>
         <section style={{padding:'12px 24px 0'}}>
-          <Eyebrow style={{marginBottom:4}}>Name or situation</Eyebrow>
-          <SerifInput value={name} onChange={setName} autoFocus placeholder="Person, situation, or 'Standalone: …'"/>
-          <div style={{marginTop:28}}>
-            <Eyebrow style={{marginBottom:4}}>What is the fear about?</Eyebrow>
-            <SerifTextarea value={cause} onChange={setCause} minRows={2} placeholder="A brief description, optional"/>
+          {isCauseLinked ? (
+            <p className="serif" style={{fontSize:17,color:'var(--ink)',lineHeight:1.45,fontStyle:'italic',textWrap:'pretty',margin:0}}>"{cause}"</p>
+          ) : (
+            <>
+              <Eyebrow style={{marginBottom:4}}>Name or situation</Eyebrow>
+              <SerifInput value={name} onChange={setName} autoFocus placeholder="A fear you carry — even with no resentment behind it"/>
+              <div style={{marginTop:24}}>
+                <Eyebrow style={{marginBottom:4}}>What is the fear about?</Eyebrow>
+                <SerifTextarea value={cause} onChange={setCause} minRows={2} placeholder="A brief description, optional"/>
+              </div>
+            </>
+          )}
+        </section>
+        <section style={{padding:'28px 24px 0'}}>
+          <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',marginBottom:6}}>
+            <Eyebrow>Fear categories · check all that apply</Eyebrow>
+            <ButtonText onClick={()=>nav.push('fear-categories')}>edit list →</ButtonText>
           </div>
-          <div style={{marginTop:32}}>
-            <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',marginBottom:12}}>
-              <Eyebrow>Categories · check all that apply</Eyebrow>
-              <ButtonText onClick={()=>nav.push('fear-categories')}>edit list →</ButtonText>
-            </div>
-            {steps.fearCategories.map(c=>(
-              <Pressable key={c} onClick={()=>toggle(c)} style={{display:'flex',alignItems:'center',gap:14,padding:'12px 0',borderBottom:'1px solid var(--rule-soft)'}}>
-                <HandCheck checked={cats.has(c)} size={18}/>
-                <span className="serif" style={{flex:1,fontSize:16,color:cats.has(c)?'var(--ink)':'var(--muted)',fontStyle:cats.has(c)?'normal':'italic'}}>{c}</span>
-              </Pressable>
-            ))}
-          </div>
-          {!isNew&&<div style={{marginTop:28,paddingBottom:28}}>
+          <p className="serif" style={{fontSize:13,color:'var(--muted)',fontStyle:'italic',lineHeight:1.5,margin:'0 0 8px'}}>"We asked ourselves why we had them." — pg 68</p>
+          {steps.fearCategories.map(c=>(
+            <Pressable key={c} onClick={()=>toggle(c)} style={{display:'flex',alignItems:'center',gap:14,padding:'12px 0',borderBottom:'1px solid var(--rule-soft)',minWidth:0}}>
+              <HandCheck checked={cats.has(c)} size={18}/>
+              <span className="serif" style={{flex:1,minWidth:0,fontSize:16,color:cats.has(c)?'var(--ink)':'var(--muted)',fontStyle:cats.has(c)?'normal':'italic'}}>{c}</span>
+            </Pressable>
+          ))}
+        </section>
+        {existing && !existing.causeId && (
+          <section style={{padding:'24px',textAlign:'center'}}>
             <Pressable onClick={()=>{ if(confirm(`Remove "${existing.name}"?`)){ removeItem('fears', existing.id); nav.back(); } }} style={{padding:'12px 0'}}>
               <span className="serif" style={{fontSize:15,color:'#a04030',fontStyle:'italic'}}>Remove this fear</span>
             </Pressable>
-          </div>}
+          </section>
+        )}
+        <section style={{padding:'8px 24px 40px'}}>
+          <ButtonSerif primary onClick={save} style={{width:'100%'}}>Save</ButtonSerif>
         </section>
       </ScreenBody>
     </>
   );
 }
 
+/* ── SEX RELATIONS schema — Big Book pg 69 ── 12 questions per person/relation.
+   Q1–3 carry the Book's example prompts as hints. Stored verbatim. */
+const SEX_INSTRUCTIONS = [
+  'List every person (including yourself), animal, or object with whom you have had physical sexual relations. Use a meaningful short description if you cannot recall a name.',
+  'Include anyone you continually flirted with or acted suggestively toward, and anyone or anything repeatedly fantasized about.',
+  'List practices without being graphic (e.g. "telephone or internet sex", "viewing pornography online").',
+  'Answer all twelve questions for each entry, then discuss your work with your sponsor.',
+];
+const SEX_QUESTIONS = [
+  {key:'q1',  q:'Where was I selfish?', hint:'e.g. I used him/her for…; stayed in the relationship for sex, attention, gratification, security, self-esteem; wanted him/her to be different; withheld; fantasized.'},
+  {key:'q2',  q:'Where was I dishonest?', hint:'e.g. told only what I wanted known; told myself I could control his/her behavior; did not tell the truth about my needs or what bothered me.'},
+  {key:'q3',  q:'Where was I inconsiderate?', hint:'e.g. judged on appearance; aloof, avoidant, demanding, ignoring, blaming, people-pleasing; controlling or needy behaviors; stayed too long; did not invite my Higher Power into the relationship.'},
+  {key:'q4',  q:'Who was hurt in this situation?'},
+  {key:'q5',  q:'Did I arouse jealousy, suspicion, or bitterness?'},
+  {key:'q6',  q:'Where was I at fault?'},
+  {key:'q7',  q:'What should I have done instead?'},
+  {key:'q8',  q:'What will I do in the future?'},
+  {key:'q9',  q:'Did I pray or have spiritual conversations with him/her?'},
+  {key:'q10', q:'Did I pray for him/her?'},
+  {key:'q11', q:'Did I enjoy his/her company?'},
+  {key:'q12', q:'Did we bring each other closer to my Higher Power?'},
+];
+
+function Fear2Screen(){
+  const nav=useNav();
+  const {steps}=useSteps();
+  const {ui}=useUISettings();
+  const fear2=steps.fear2||{};
+  // Categories shown here = the user's fear categories (shared with the Fear
+  // inventory), so any custom category the user added gets the same 9 questions.
+  const cats=steps.fearCategories;
+  const answeredCount=(cat)=>{
+    const a=fear2[cat]||{};
+    return FEAR2_QUESTIONS.filter(q=>a[q.key]&&String(a[q.key]).trim()).length;
+  };
+  // A badge of how many fear ENTRIES were tagged with this category in Fear inventory.
+  const taggedCount=(cat)=>(steps.fears||[]).filter(f=>(f.categories||[]).includes(cat)).length;
+  return (
+    <>
+      <AppBar eyebrow="V · 12 & 12 · pg 49–53" title="Exploration of fear"/>
+      <ScreenBody>
+        <section style={{padding:'4px 24px 0'}}>
+          <Scripture cite="12 & 12, pg 49">{applySpiritualLanguage('"Unreasonable fear that our instincts will not be satisfied drives us to covet the possessions of others, to lust for sex and power, to become angry when our instinctive demands are threatened, to be envious when the ambitions of others seem to be realized while ours are not."', ui.spiritualLanguage)}</Scripture>
+        </section>
+        <section style={{padding:'20px 24px 0'}}>
+          <NoteBox>
+            <span style={{display:'block'}}>Work each fear category in turn. The same nine questions apply to every category — including any you added yourself.</span>
+            <span style={{display:'block',marginTop:6,fontStyle:'italic'}}>"Questions like these, more of which will come to mind easily in each individual case, will help turn up the root causes." — 12 &amp; 12, pgs 52–53</span>
+          </NoteBox>
+        </section>
+        <section style={{padding:'26px 24px 0'}}>
+          <Eyebrow style={{marginBottom:6}}>Fear categories</Eyebrow>
+          {cats.map(cat=>{
+            const ans=answeredCount(cat);
+            const tagged=taggedCount(cat);
+            const done=ans===FEAR2_QUESTIONS.length;
+            return (
+              <Pressable key={cat} onClick={()=>nav.push('fear2-cat',{cat})} style={{display:'flex',alignItems:'center',gap:12,padding:'15px 0',borderBottom:'1px solid var(--rule-soft)',textAlign:'left',minWidth:0}}>
+                <span aria-hidden="true" style={{flexShrink:0,width:16,height:16,borderRadius:'50%',border:`1.5px solid ${done?'var(--terra-ink)':(ans>0?'var(--terra)':'var(--muted)')}`,background:done?'var(--terra-ink)':'transparent',display:'inline-flex',alignItems:'center',justifyContent:'center'}}>
+                  {done&&<span style={{color:'var(--paper)',fontSize:10,lineHeight:1}}>✓</span>}
+                </span>
+                <span style={{flex:1,minWidth:0}}>
+                  <span className="serif" style={{display:'block',fontSize:17,color:'var(--ink)',lineHeight:1.3}}>{cat}</span>
+                  <Stamp style={{marginTop:2,display:'block'}}>{ans} of {FEAR2_QUESTIONS.length} answered{tagged>0?` · ${tagged} fear${tagged!==1?'s':''} tagged`:''}</Stamp>
+                </span>
+                <span className="serif" style={{flexShrink:0,color:'var(--muted)',fontSize:18}}>›</span>
+              </Pressable>
+            );
+          })}
+          <Pressable onClick={()=>nav.push('fear-categories')} style={{display:'flex',alignItems:'center',gap:12,padding:'16px 0'}}>
+            <span className="serif" style={{fontSize:16,color:'var(--terra-ink)',flexShrink:0}}>+</span>
+            <span className="serif" style={{fontSize:15,color:'var(--terra-ink)',fontStyle:'italic'}}>add or edit categories</span>
+          </Pressable>
+        </section>
+        <section style={{padding:'8px 24px 36px'}}/>
+      </ScreenBody>
+    </>
+  );
+}
+
+function Fear2CategoryScreen(){
+  const nav=useNav();
+  const {steps,update}=useSteps();
+  const {ui}=useUISettings();
+  const cat=nav.params&&nav.params.cat;
+  const fear2=steps.fear2||{};
+  const saved=fear2[cat]||{};
+  const [answers,setAnswers]=useState(()=>{
+    const seed={}; FEAR2_QUESTIONS.forEach(q=>{ seed[q.key]=saved[q.key]||''; }); return seed;
+  });
+  const [openKey,setOpenKey]=useState(null);
+  const setAnswer=(k,v)=>setAnswers(a=>({...a,[k]:v}));
+  const toggle=(k)=>setOpenKey(c=>c===k?null:k);
+  const save=()=>{
+    const next={...fear2,[cat]:answers};
+    update({fear2:next});
+    nav.back();
+  };
+  if(!cat){
+    return (<><AppBar eyebrow="Exploration of fear" title="No category"/></>);
+  }
+  const answered=FEAR2_QUESTIONS.filter(q=>answers[q.key]&&answers[q.key].trim()).length;
+  return (
+    <>
+      <AppBar eyebrow="Exploration of fear" title={cat} right={<ButtonText onClick={save}>save →</ButtonText>}/>
+      <ScreenBody>
+        <section style={{padding:'12px 24px 0'}}>
+          <Stamp style={{display:'block'}}>{answered} of {FEAR2_QUESTIONS.length} answered</Stamp>
+          <p className="serif" style={{fontSize:14,color:'var(--muted)',fontStyle:'italic',lineHeight:1.5,marginTop:8,textWrap:'pretty'}}>The same nine questions turn up the root cause of this fear. Answer what you can; your sponsor will help with the rest.</p>
+        </section>
+        <section style={{padding:'18px 24px 0'}}>
+          {FEAR2_QUESTIONS.map((q,i)=>(
+            <ExpandableAnswer key={q.key}
+              n={i+1}
+              question={applySpiritualLanguage(q.q, ui.spiritualLanguage)}
+              hint={q.hint?applySpiritualLanguage(q.hint, ui.spiritualLanguage):undefined}
+              value={answers[q.key]}
+              open={openKey===q.key}
+              onToggle={()=>toggle(q.key)}
+              onChange={(v)=>setAnswer(q.key,v)}
+            />
+          ))}
+        </section>
+        <section style={{padding:'28px 24px 40px'}}>
+          <ButtonSerif primary onClick={save} style={{width:'100%'}}>Save answers</ButtonSerif>
+        </section>
+      </ScreenBody>
+    </>
+  );
+}
+
+function CategoryNameInput({value,onCommit}){
+  // Local draft so typing stays smooth; commit to persisted state on blur/Enter.
+  const [draft,setDraft]=React.useState(value);
+  React.useEffect(()=>{ setDraft(value); },[value]);
+  const commit=()=>{ const v=draft.trim(); if(v && v!==value) onCommit(v); else setDraft(value); };
+  return (
+    <input value={draft}
+      onChange={e=>setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={e=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } }}
+      placeholder="Category name"
+      style={{flex:1,minWidth:0,background:'transparent',border:0,fontFamily:'Newsreader,Georgia,serif',fontSize:17,color:'var(--ink)',padding:'10px 0',outline:'none'}}/>
+  );
+}
+
 function FearCategoriesScreen(){
   const nav=useNav();
   const {steps, update} = useSteps();
-  const [cats,setCats]=useState(steps.fearCategories.slice());
+  // Persisted list (already self-healed of blanks at load). Changes commit straight
+  // to storage so a new category is instantly available to the fear checklists and
+  // nothing is lost on back-navigation.
+  const cats=(steps.fearCategories||[]).filter(c=>c && c.trim());
   const [newCat,setNewCat]=useState('');
-  const usage=steps.fears.reduce((m,f)=>{(f.categories||[]).forEach(c=>{m[c]=(m[c]||0)+1;});return m;},{});
-  const rename=(i,v)=>setCats(s=>{const n=s.slice();n[i]=v;return n;});
-  const remove=(i)=>setCats(s=>s.filter((_,k)=>k!==i));
-  const add=()=>{const v=newCat.trim();if(!v)return;setCats(s=>[...s,v]);setNewCat('');};
-  const done=()=>{ update({fearCategories:cats.filter(c=>c.trim()).map(c=>c.trim())}); nav.back(); };
+  const usage=(steps.fears||[]).reduce((m,f)=>{(f.categories||[]).forEach(c=>{m[c]=(m[c]||0)+1;});return m;},{});
+  const commit=(next)=>update({fearCategories: next.filter(c=>c && c.trim()).map(c=>c.trim())});
+  const rename=(i,v)=>commit(cats.map((c,k)=>k===i?v:c));
+  const remove=(i)=>commit(cats.filter((_,k)=>k!==i));
+  const add=()=>{
+    const v=newCat.trim();
+    if(!v) return;
+    if(cats.some(c=>c.toLowerCase()===v.toLowerCase())){ setNewCat(''); return; }
+    commit([...cats, v]);
+    setNewCat('');
+  };
+  const restore=()=>commit([...DEFAULT_FEAR_CATS_V2]);
   return (
     <>
-      <AppBar eyebrow="Fear inventory" title="Edit categories" right={<ButtonText onClick={done}>done →</ButtonText>}/>
+      <AppBar eyebrow="Fear inventory" title="Edit categories" right={<ButtonText onClick={()=>nav.back()}>done →</ButtonText>}/>
       <ScreenBody>
         <section style={{padding:'4px 24px 0'}}>
           <p className="serif" style={{fontSize:15,color:'var(--muted)',fontStyle:'italic',lineHeight:1.55,margin:0,textWrap:'pretty'}}>Tune the category list so it fits your own experience. The Big Book offers these as a starting point — your sponsor may help you reshape them.</p>
         </section>
+        {/* Add at the top so it's easy to reach */}
+        <section style={{padding:'20px 24px 0'}}>
+          <Eyebrow style={{marginBottom:8}}>Add a category</Eyebrow>
+          <div style={{display:'flex',alignItems:'center',gap:12,minWidth:0}}>
+            <SerifInput value={newCat} onChange={setNewCat} placeholder="e.g. Loneliness, Intimacy, Authority…" style={{flex:1,minWidth:0}}/>
+            <Pressable onClick={add} style={{padding:'8px 10px',flexShrink:0,width:'auto',border:'1px solid var(--terra)',borderRadius:999}}>
+              <span className="serif" style={{fontSize:15,color:'var(--terra-ink)'}}>+ add</span>
+            </Pressable>
+          </div>
+        </section>
         <section style={{padding:'24px 24px 0'}}>
           <Eyebrow style={{marginBottom:12}}>Your categories · {cats.length}</Eyebrow>
+          {cats.length===0 && (
+            <p className="serif" style={{fontSize:15,color:'var(--muted)',fontStyle:'italic',lineHeight:1.5,padding:'8px 0'}}>No categories yet. Add one above, or restore the defaults below.</p>
+          )}
           {cats.map((c,i)=>(
-            <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'6px 0',borderBottom:'1px solid var(--rule-soft)'}}>
-              <span className="serif" style={{fontSize:12,color:'var(--muted)',fontStyle:'italic',width:22,fontVariantNumeric:'oldstyle-nums'}}>{romanize(i+1)}.</span>
-              <input value={c} onChange={e=>rename(i,e.target.value)} style={{flex:1,background:'transparent',border:0,fontFamily:'Newsreader,Georgia,serif',fontSize:17,color:'var(--ink)',padding:'10px 0',outline:'none'}}/>
-              {usage[c]>0&&<Stamp>{usage[c]} use{usage[c]!==1?'s':''}</Stamp>}
-              <Pressable onClick={()=>remove(i)} style={{padding:'8px 4px',color:'var(--muted)'}}>
+            <div key={c+'|'+i} style={{display:'flex',alignItems:'center',gap:12,padding:'6px 0',borderBottom:'1px solid var(--rule-soft)',minWidth:0}}>
+              <span className="serif" style={{fontSize:12,color:'var(--muted)',fontStyle:'italic',width:22,flexShrink:0,fontVariantNumeric:'oldstyle-nums'}}>{romanize(i+1)}.</span>
+              <CategoryNameInput value={c} onCommit={(v)=>rename(i,v)}/>
+              {usage[c]>0&&<Stamp style={{flexShrink:0}}>{usage[c]} use{usage[c]!==1?'s':''}</Stamp>}
+              <Pressable onClick={()=>remove(i)} style={{padding:'8px 4px',flexShrink:0,width:'auto',color:'var(--muted)'}}>
                 <span className="serif" style={{fontSize:18}}>✕</span>
               </Pressable>
             </div>
           ))}
         </section>
-        <section style={{padding:'20px 24px 0'}}>
-          <Eyebrow style={{marginBottom:4}}>Add a category</Eyebrow>
-          <div style={{display:'flex',alignItems:'center',gap:12}}>
-            <SerifInput value={newCat} onChange={setNewCat} placeholder="e.g. Loneliness, Intimacy, Authority…" style={{flex:1}}/>
-            <Pressable onClick={add} style={{padding:'8px 4px'}}>
-              <span className="serif" style={{fontSize:16,color:'var(--terra-ink)',fontStyle:'italic'}}>+ add</span>
-            </Pressable>
-          </div>
-        </section>
-        <section style={{padding:'32px 24px'}}>
-          <Pressable onClick={()=>setCats([...DEFAULT_FEAR_CATS_V2])} style={{padding:'12px 0'}}>
+        <section style={{padding:'28px 24px 36px'}}>
+          <Pressable onClick={restore} style={{padding:'12px 0'}}>
             <span className="serif" style={{fontSize:15,color:'var(--terra-ink)',fontStyle:'italic'}}>Restore the default eight categories</span>
           </Pressable>
         </section>
@@ -2594,11 +2996,68 @@ function FearCategoriesScreen(){
   );
 }
 
-const AMENDS_WILL=[{key:'now',label:'Direct — now',color:'var(--sage)'},{key:'later',label:'Direct — not yet',color:'var(--gold)'},{key:'never',label:'Never',color:'var(--muted)'},{key:'living',label:'Living amends',color:'var(--terra-ink)'}];
-
 function AmendsScreen(){
   const nav=useNav();
-  const {steps, removeItem} = useSteps();
+  const {steps, addItem, removeItem} = useSteps();
+  const amends=steps.amends||[];
+
+  // Auto-prefill: every resentment (name + first cause) seeds an amends row, so the
+  // list arrives populated. Keyed by resentmentId; existing amends preserved.
+  const causeByName=React.useMemo(()=>{
+    const m={}; (steps.causes||[]).forEach(c=>{ if(!m[c.name]) m[c.name]=c.cause; }); return m;
+  },[steps.causes]);
+  const seededIds=new Set(amends.filter(a=>a.resentmentId).map(a=>a.resentmentId));
+  const toSeed=(steps.resentments||[]).filter(r=>!seededIds.has(r.id));
+  const seedAll=()=>{
+    toSeed.forEach(r=>addItem('amends',{resentmentId:r.id,name:r.name,cause:causeByName[r.name]||'',harms:'',direct:'now',living:false,complete:false}));
+  };
+
+  // Status groups (mutually exclusive). complete > living > in-progress > not-started.
+  const statusOf=(a)=> a.complete?'complete' : a.living?'living' : (a.harms&&a.harms.trim())?'progress' : 'notstarted';
+  const GROUPS=[
+    {key:'notstarted',label:'Not started'},
+    {key:'progress',  label:'In progress'},
+    {key:'living',    label:'Living amends'},
+    {key:'complete',  label:'Complete'},
+  ];
+  const byGroup={}; GROUPS.forEach(g=>byGroup[g.key]=[]);
+  amends.forEach(a=>byGroup[statusOf(a)].push(a));
+
+  const willColor=(a)=>(AMENDS_WILL.find(w=>w.key===a.direct)||AMENDS_WILL[2]).color;
+  const willLabel=(a)=>(AMENDS_WILL.find(w=>w.key===a.direct)||AMENDS_WILL[2]).label.replace('Direct — ','');
+
+  const Row=({a})=>{
+    const st=statusOf(a);
+    const done=st==='complete';
+    return (
+      <div style={{padding:'16px 24px',borderBottom:'1px solid var(--rule-soft)',display:'flex',alignItems:'flex-start',gap:8,minWidth:0}}>
+        <Pressable onClick={()=>nav.push('amend-edit',{id:a.id})} style={{flex:1,minWidth:0,padding:0,textAlign:'left',display:'block'}}>
+          <span style={{display:'flex',alignItems:'baseline',gap:10,minWidth:0}}>
+            <span aria-hidden="true" style={{flexShrink:0,width:14,height:14,borderRadius:'50%',border:`1.5px solid ${done?'var(--terra-ink)':'var(--muted)'}`,background:done?'var(--terra-ink)':'transparent',display:'inline-flex',alignItems:'center',justifyContent:'center',alignSelf:'center'}}>
+              {done&&<span style={{color:'var(--paper)',fontSize:9,lineHeight:1}}>✓</span>}
+            </span>
+            <span className="serif" style={{flex:1,minWidth:0,fontSize:18,fontWeight:400,lineHeight:1.2,color:'var(--ink)'}}>{a.name}</span>
+            {st!=='complete' && st!=='living' && (
+              <span style={{flexShrink:0,display:'inline-flex',alignItems:'center',gap:6}}>
+                <span style={{width:5,height:5,borderRadius:'50%',background:willColor(a)}}/>
+                <span className="serif" style={{fontSize:12,color:willColor(a),fontStyle:'italic'}}>{willLabel(a).toLowerCase()}</span>
+              </span>
+            )}
+          </span>
+          <span style={{display:'block',paddingLeft:24,marginTop:4}}>
+            {a.cause&&<Stamp style={{display:'block',marginBottom:2}}>{a.cause}</Stamp>}
+            {a.harms
+              ? <span className="serif" style={{display:'block',fontSize:15,color:'var(--ink-2)',lineHeight:1.5,textWrap:'pretty'}}>{a.harms}</span>
+              : <span className="serif" style={{display:'block',fontSize:14,color:'var(--faint)',fontStyle:'italic'}}>— harms not listed yet —</span>}
+          </span>
+        </Pressable>
+        <Pressable onClick={()=>{ if(confirm(`Remove "${a.name}" from amends?`)) removeItem('amends', a.id); }} style={{padding:'4px 6px',flexShrink:0,width:'auto'}}>
+          <span className="serif" style={{fontSize:15,color:'var(--faint)'}}>✕</span>
+        </Pressable>
+      </div>
+    );
+  };
+
   return (
     <>
       <AppBar eyebrow="VII · Steps 8 & 9 · pg 76–84" title="Amends list"/>
@@ -2606,56 +3065,51 @@ function AmendsScreen(){
         <section style={{padding:'4px 24px 0'}}>
           <Scripture cite="Big Book, pg 59">"Made a list of all persons we had harmed and became willing to make amends to them all."</Scripture>
         </section>
-        <section style={{padding:'24px 24px 0'}}>
-          <Eyebrow style={{marginBottom:8}}>Willingness · how to read the marks</Eyebrow>
-          <div style={{display:'flex',flexWrap:'wrap',gap:16,padding:'8px 0 4px'}}>
-            {AMENDS_WILL.map(w=>(
-              <div key={w.key} style={{display:'flex',alignItems:'center',gap:8}}>
-                <span style={{width:5,height:5,borderRadius:'50%',background:w.color}}/>
-                <span className="serif" style={{fontSize:13,color:'var(--ink-2)',fontStyle:'italic'}}>{w.label}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-        <section style={{padding:'24px 0 0'}}>
-          {steps.amends.length===0 && (
-            <p className="serif" style={{fontSize:15,color:'var(--muted)',fontStyle:'italic',textAlign:'center',padding:'12px 24px'}}>
-              No amends yet. Tap "add an amend" below.
-            </p>
+
+        {/* Add at top so it's always reachable */}
+        <section style={{padding:'18px 24px 0'}}>
+          <ButtonSerif primary onClick={()=>nav.push('amend-add')} style={{width:'100%'}}>+ add someone I've harmed</ButtonSerif>
+          {toSeed.length>0 && (
+            <Pressable onClick={seedAll} style={{display:'flex',alignItems:'center',gap:10,marginTop:12,padding:'12px 16px',border:'1px solid var(--terra)',borderRadius:8,background:'var(--terra-soft)'}}>
+              <span className="serif" style={{fontSize:16,color:'var(--terra-ink)',flexShrink:0}}>↓</span>
+              <span className="serif" style={{flex:1,minWidth:0,fontSize:15,color:'var(--terra-ink)'}}>Bring {toSeed.length} name{toSeed.length!==1?'s':''} forward from the resentment list</span>
+            </Pressable>
           )}
-          {steps.amends.map((a,i)=>{
-            const w=AMENDS_WILL.find(x=>x.key===a.direct)||AMENDS_WILL[3];
-            return (
-              <div key={a.id} style={{padding:'18px 24px',borderBottom:'1px solid var(--rule-soft)',display:'flex',alignItems:'flex-start',gap:8}}>
-                <div style={{flex:1}}>
-                  <div style={{display:'flex',alignItems:'baseline',gap:12,marginBottom:6}}>
-                    <span className="serif" style={{fontSize:12,color:'var(--muted)',fontStyle:'italic',width:22,fontVariantNumeric:'oldstyle-nums'}}>{romanize(i+1)}.</span>
-                    <Pressable onClick={()=>nav.push('amend-edit',{id:a.id})} style={{flex:1,padding:0,textAlign:'left'}}>
-                      <h4 className="serif" style={{fontSize:19,fontWeight:400,lineHeight:1.2}}>{a.name}</h4>
-                    </Pressable>
-                    <span style={{display:'inline-flex',alignItems:'center',gap:6}}>
-                      <span style={{width:5,height:5,borderRadius:'50%',background:w.color}}/>
-                      <span className="serif" style={{fontSize:13,color:w.color,fontStyle:'italic'}}>{w.label.toLowerCase()}</span>
-                    </span>
-                  </div>
-                  <div style={{paddingLeft:34}}>
-                    {a.cause&&<Stamp style={{display:'block',marginBottom:4}}>{a.cause}</Stamp>}
-                    <p className="serif" style={{fontSize:15,color:'var(--ink-2)',lineHeight:1.5,margin:0,textWrap:'pretty'}}>{a.harms}</p>
-                  </div>
+        </section>
+
+        <section style={{padding:'18px 24px 0'}}>
+          <NoteBox>
+            <span style={{display:'block'}}>Your names and causes carry forward from the resentment list. For each, list all harms and choose a status. Living (indirect) amends are for when a direct amend would cause harm or the person can't be reached.</span>
+            <span style={{display:'block',marginTop:6}}>Review all of this with your sponsor to plan your amends.</span>
+          </NoteBox>
+        </section>
+
+        {amends.length>0 && (
+          <section style={{padding:'22px 24px 0'}}>
+            <div style={{display:'flex',flexWrap:'wrap',gap:16}}>
+              {GROUPS.map(g=>(
+                <div key={g.key} style={{display:'flex',alignItems:'baseline',gap:6}}>
+                  <span className="serif" style={{fontSize:18,color:'var(--ink)',fontVariantNumeric:'oldstyle-nums'}}>{byGroup[g.key].length}</span>
+                  <span className="serif" style={{fontSize:13,color:'var(--muted)'}}>{g.label.toLowerCase()}</span>
                 </div>
-                <Pressable onClick={()=>{ if(confirm(`Remove "${a.name}" from amends?`)) removeItem('amends', a.id); }} style={{padding:'4px 6px'}}>
-                  <span className="serif" style={{fontSize:15,color:'var(--faint)'}}>✕</span>
-                </Pressable>
-              </div>
-            );
-          })}
-        </section>
-        <section style={{padding:'24px'}}>
-          <Pressable onClick={()=>nav.push('amend-add')} style={{display:'flex',alignItems:'center',gap:12,padding:'14px 0',borderTop:'1px dashed var(--rule)'}}>
-            <span className="serif" style={{fontSize:18,color:'var(--terra-ink)',width:12}}>+</span>
-            <span className="serif" style={{fontSize:17,color:'var(--terra-ink)',fontStyle:'italic'}}>add an amend</span>
-          </Pressable>
-        </section>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {amends.length===0 && toSeed.length===0 && (
+          <section style={{padding:'24px',textAlign:'center'}}>
+            <p className="serif" style={{fontSize:15,color:'var(--muted)',fontStyle:'italic',lineHeight:1.55}}>Add names to the resentment list first, or tap "add someone I've harmed" above.</p>
+          </section>
+        )}
+
+        {GROUPS.map(g=> byGroup[g.key].length>0 && (
+          <section key={g.key} style={{padding:'24px 0 0'}}>
+            <Eyebrow style={{padding:'0 24px',marginBottom:6}}>{g.label} · {byGroup[g.key].length}</Eyebrow>
+            {byGroup[g.key].map(a=><Row key={a.id} a={a}/>)}
+          </section>
+        ))}
+        <section style={{padding:'24px'}}/>
       </ScreenBody>
     </>
   );
@@ -2669,12 +3123,19 @@ function AmendEditScreen(){
   const [name,setName]=useState(existing?existing.name:'');
   const [cause,setCause]=useState(existing?existing.cause:'');
   const [harms,setHarms]=useState(existing?existing.harms:'');
-  const [direct,setDirect]=useState(existing?existing.direct:'now');
+  const [direct,setDirect]=useState(existing?(existing.direct||'now'):'now');
+  // Single mutually-exclusive lifecycle status: 'progress' | 'living' | 'complete'.
+  const initStatus = existing ? (existing.complete?'complete':existing.living?'living':'progress') : 'progress';
+  const [status,setStatus]=useState(initStatus);
   const save=()=>{
     if(!name.trim()){ alert('Please add a name.'); return; }
-    const data = { name:name.trim(), cause:cause.trim(), harms:harms.trim(), direct };
-    if(isNew) addItem('amends', data);
-    else updateItem('amends', existing.id, data);
+    const data = {
+      name:name.trim(), cause:cause.trim(), harms:harms.trim(), direct,
+      living: status==='living',
+      complete: status==='complete',
+    };
+    if(existing){ data.resentmentId=existing.resentmentId; updateItem('amends', existing.id, data); }
+    else addItem('amends', data);
     nav.back();
   };
   return (
@@ -2683,26 +3144,174 @@ function AmendEditScreen(){
       <ScreenBody>
         <section style={{padding:'12px 24px 0'}}>
           <Eyebrow style={{marginBottom:4}}>Name</Eyebrow>
-          <SerifInput value={name} onChange={setName} autoFocus placeholder="Person or institution"/>
+          <SerifInput value={name} onChange={setName} autoFocus placeholder="Person or institution (code if sensitive)"/>
           <div style={{marginTop:28}}>
-            <Eyebrow style={{marginBottom:4}}>Short context · optional</Eyebrow>
+            <Eyebrow style={{marginBottom:4}}>The cause · carried from resentments</Eyebrow>
             <SerifInput value={cause} onChange={setCause} placeholder="e.g. Money / words to family"/>
           </div>
           <div style={{marginTop:28}}>
-            <Eyebrow style={{marginBottom:4}}>The harm</Eyebrow>
+            <Eyebrow style={{marginBottom:4}}>List all harms</Eyebrow>
+            <p className="serif" style={{fontSize:13,color:'var(--muted)',fontStyle:'italic',lineHeight:1.5,margin:'0 0 8px'}}>Both specific and general — everything done to the subject of this resentment.</p>
             <SerifTextarea value={harms} onChange={setHarms} minRows={3} placeholder="What was the harm? Brief and honest."/>
           </div>
           <div style={{marginTop:28}}>
-            <Eyebrow style={{marginBottom:12}}>Willingness</Eyebrow>
-            <SegPills value={direct} onChange={setDirect} options={AMENDS_WILL.map(w=>({value:w.key,label:w.label}))}/>
+            <Eyebrow style={{marginBottom:12}}>Willingness · direct amend</Eyebrow>
+            <SegPills value={direct} onChange={setDirect} options={AMENDS_WILL.filter(w=>w.key!=='living').map(w=>({value:w.key,label:w.label.replace('Direct — ','')}))}/>
+          </div>
+          <div style={{marginTop:28}}>
+            <Eyebrow style={{marginBottom:12}}>Status</Eyebrow>
+            <SegPills value={status} onChange={setStatus} options={[
+              {value:'progress',label:'In progress'},
+              {value:'living',label:'Living / indirect'},
+              {value:'complete',label:'Complete'},
+            ]}/>
+            <p className="serif" style={{fontSize:13,color:'var(--muted)',fontStyle:'italic',lineHeight:1.5,marginTop:8,textWrap:'pretty'}}>
+              {status==='living'
+                ? 'Living (indirect) amends — for when a direct amend would cause harm, or the person can’t be reached.'
+                : status==='complete'
+                  ? 'Marked complete — this amend has been made.'
+                  : 'Still working this amend.'}
+            </p>
           </div>
           {!isNew && (
-            <div style={{marginTop:32,paddingBottom:36}}>
+            <div style={{marginTop:24,paddingBottom:24,textAlign:'center'}}>
               <Pressable onClick={()=>{ if(confirm(`Remove "${existing.name}"?`)){ removeItem('amends', existing.id); nav.back(); } }} style={{padding:'12px 0'}}>
                 <span className="serif" style={{fontSize:15,color:'#a04030',fontStyle:'italic'}}>Remove this amend</span>
               </Pressable>
             </div>
           )}
+          <section style={{padding:'8px 0 40px'}}>
+            <ButtonSerif primary onClick={save} style={{width:'100%'}}>Save</ButtonSerif>
+          </section>
+        </section>
+      </ScreenBody>
+    </>
+  );
+}
+
+function SexScreen(){
+  const nav=useNav();
+  const {steps,update,removeItem}=useSteps();
+  const {ui}=useUISettings();
+  const people=steps.sexRelations||[];
+  const ideal=steps.sexIdeal||'';
+  const isDone=(p)=>SEX_QUESTIONS.filter(q=>p[q.key]&&String(p[q.key]).trim()).length===SEX_QUESTIONS.length;
+  const worked=people.filter(isDone);
+  return (
+    <>
+      <AppBar eyebrow="VI · Step 4 · pg 68–71" title="Sex relations"/>
+      <ScreenBody>
+        <section style={{padding:'4px 24px 0'}}>
+          <NoteBox style={{borderColor:'var(--terra)'}}>
+            <span className="serif" style={{fontWeight:600,color:'var(--terra-ink)'}}>Use of initials or codes is mandatory.</span>{' '}
+            A breach of confidentiality could cause irreparable harm to innocent people. Unless you are committed to filing criminal charges, the identities on this list must be indecipherable to others.
+          </NoteBox>
+        </section>
+        <section style={{padding:'18px 24px 0'}}>
+          <Scripture cite="Big Book, pg 70">{applySpiritualLanguage('"We earnestly pray for the right ideal, for guidance in each questionable situation, for sanity, and for the strength to do the right thing."', ui.spiritualLanguage)}</Scripture>
+        </section>
+
+        <section style={{padding:'24px 24px 0'}}>
+          <Eyebrow style={{marginBottom:4}}>My sexual ideal</Eyebrow>
+          <p className="serif" style={{fontSize:13,color:'var(--muted)',fontStyle:'italic',lineHeight:1.5,margin:'0 0 8px',textWrap:'pretty'}}>Instruction 8 — write your ideal here, kept separate from the list below. What do I want my sexual conduct to look like?</p>
+          <SerifTextarea value={ideal} onChange={(v)=>update({sexIdeal:v})} minRows={3} placeholder="The kind of partner and conduct I pray to grow toward…"/>
+        </section>
+
+        <section style={{padding:'24px 24px 0'}}>
+          <NoteBox>
+            {SEX_INSTRUCTIONS.map((line,i)=>(<span key={i} style={{display:'block',marginTop:i?6:0}}>{line}</span>))}
+          </NoteBox>
+        </section>
+
+        <section style={{padding:'20px 24px 0'}}>
+          <ButtonSerif primary onClick={()=>nav.push('sex-add')} style={{width:'100%'}}>+ add a coded name or description</ButtonSerif>
+        </section>
+        <section style={{padding:'20px 24px 0'}}>
+          <Eyebrow style={{marginBottom:6}}>The list · {worked.length} of {people.length} worked</Eyebrow>
+          {people.length===0 && (
+            <p className="serif" style={{fontSize:15,color:'var(--muted)',fontStyle:'italic',lineHeight:1.55,padding:'8px 0'}}>No entries yet. Add a coded name or description below.</p>
+          )}
+          {people.map(p=>{
+            const done=isDone(p);
+            const ans=SEX_QUESTIONS.filter(q=>p[q.key]&&String(p[q.key]).trim()).length;
+            return (
+              <div key={p.id} style={{display:'flex',alignItems:'flex-start',gap:12,padding:'14px 0',borderBottom:'1px solid var(--rule-soft)',minWidth:0}}>
+                <Pressable onClick={()=>nav.push('sex-edit',{id:p.id})} style={{flex:1,minWidth:0,padding:0,textAlign:'left',display:'block'}}>
+                  <span style={{display:'flex',alignItems:'flex-start',gap:12,minWidth:0}}>
+                    <span aria-hidden="true" style={{flexShrink:0,marginTop:3,width:16,height:16,borderRadius:'50%',border:`1.5px solid ${done?'var(--terra-ink)':'var(--muted)'}`,background:done?'var(--terra-ink)':'transparent',display:'inline-flex',alignItems:'center',justifyContent:'center'}}>
+                      {done&&<span style={{color:'var(--paper)',fontSize:10,lineHeight:1}}>✓</span>}
+                    </span>
+                    <span style={{flex:1,minWidth:0}}>
+                      <span className="serif" style={{display:'block',fontSize:16,color:'var(--ink)',lineHeight:1.3}}>{p.name}</span>
+                      <Stamp style={{marginTop:2,display:'block'}}>{ans} of {SEX_QUESTIONS.length} answered</Stamp>
+                    </span>
+                  </span>
+                </Pressable>
+                <Pressable onClick={()=>{ if(confirm(`Remove "${p.name}"? Your written answers will be lost.`)) removeItem('sexRelations', p.id); }} style={{padding:'4px 6px',flexShrink:0,width:'auto'}}>
+                  <span className="serif" style={{fontSize:15,color:'var(--faint)'}}>✕</span>
+                </Pressable>
+              </div>
+            );
+          })}
+        </section>
+        <section style={{padding:'8px 24px 36px'}}/>
+      </ScreenBody>
+    </>
+  );
+}
+
+function SexEditScreen(){
+  const nav=useNav();
+  const {steps,addItem,updateItem,removeItem}=useSteps();
+  const {ui}=useUISettings();
+  const existing=nav.params&&nav.params.id?steps.sexRelations.find(p=>p.id===nav.params.id):null;
+  const [name,setName]=useState(existing?existing.name:'');
+  const [answers,setAnswers]=useState(()=>{
+    const seed={}; SEX_QUESTIONS.forEach(q=>{ seed[q.key]=existing&&existing[q.key]?existing[q.key]:''; }); return seed;
+  });
+  const [openKey,setOpenKey]=useState(null);
+  const setAnswer=(k,v)=>setAnswers(a=>({...a,[k]:v}));
+  const toggle=(k)=>setOpenKey(c=>c===k?null:k);
+  const save=()=>{
+    if(!name.trim()){ alert('Please add a coded name or description (initials only).'); return; }
+    const data={ name:name.trim(), ...answers };
+    if(existing) updateItem('sexRelations', existing.id, data);
+    else addItem('sexRelations', data);
+    nav.back();
+  };
+  const answered=SEX_QUESTIONS.filter(q=>answers[q.key]&&answers[q.key].trim()).length;
+  return (
+    <>
+      <AppBar eyebrow={existing?'Edit entry':'New entry'} title="Sex relations" right={<ButtonText onClick={save}>save →</ButtonText>}/>
+      <ScreenBody>
+        <section style={{padding:'12px 24px 0'}}>
+          <Eyebrow style={{marginBottom:4}}>Coded name or description</Eyebrow>
+          <SerifInput value={name} onChange={setName} autoFocus placeholder="Initials or a private code only — e.g. J.R."/>
+          <p className="serif" style={{fontSize:12,color:'var(--terra-ink)',fontStyle:'italic',marginTop:6}}>Initials or codes only. Never a full name.</p>
+          <Stamp style={{marginTop:10,display:'block'}}>{answered} of {SEX_QUESTIONS.length} answered</Stamp>
+        </section>
+        <section style={{padding:'20px 24px 0'}}>
+          {SEX_QUESTIONS.map((q,i)=>(
+            <ExpandableAnswer key={q.key}
+              n={i+1}
+              question={applySpiritualLanguage(q.q, ui.spiritualLanguage)}
+              hint={q.hint?applySpiritualLanguage(q.hint, ui.spiritualLanguage):undefined}
+              value={answers[q.key]}
+              open={openKey===q.key}
+              onToggle={()=>toggle(q.key)}
+              onChange={(v)=>setAnswer(q.key,v)}
+            />
+          ))}
+        </section>
+        {existing && (
+          <section style={{padding:'24px',textAlign:'center'}}>
+            <Pressable onClick={()=>{ if(confirm(`Remove "${existing.name}"?`)){ removeItem('sexRelations', existing.id); nav.back(); } }} style={{padding:'12px 0'}}>
+              <span className="serif" style={{fontSize:15,color:'#a04030',fontStyle:'italic'}}>Remove this entry</span>
+            </Pressable>
+          </section>
+        )}
+        <section style={{padding:'8px 24px 40px'}}>
+          <ButtonSerif primary onClick={save} style={{width:'100%'}}>Save answers</ButtonSerif>
         </section>
       </ScreenBody>
     </>
@@ -2738,6 +3347,11 @@ function StepsRouter(){
     case 'fear-edit':      return <FearEditScreen/>;
     case 'fear-add':       return <FearEditScreen/>;
     case 'fear-categories':return <FearCategoriesScreen/>;
+    case 'fear2':          return <Fear2Screen/>;
+    case 'fear2-cat':      return <Fear2CategoryScreen/>;
+    case 'sex':            return <SexScreen/>;
+    case 'sex-add':        return <SexEditScreen/>;
+    case 'sex-edit':       return <SexEditScreen/>;
     case 'fault-add':      return <FaultAddScreen/>;
     case 'eighth':         return <AmendsScreen/>;
     case 'amend-add':      return <AmendEditScreen/>;
@@ -2883,12 +3497,12 @@ function MeetingRow({m,hero}){
   );
 }
 
-function OnlineMeetingsScreen(){
+function OnlineMeetingsScreen({onBack}){
   const nav=useNav();
   const SA_URL='https://nextmeeting.org/275EE30A-220F-4FF2-A950-0ED2B5E4C257.html';
   return (
     <>
-      <AppBar eyebrow="SA Online" title="Online meetings" right={
+      <AppBar eyebrow="SA Online" title="Online meetings" onBack={onBack} right={
         <ButtonText onClick={()=>window.open(SA_URL,'_blank')}>open ↗</ButtonText>
       }/>
       <ScreenBody style={{padding:0,display:'flex',flexDirection:'column',flex:1}}>
@@ -2935,7 +3549,7 @@ function MeetingsListScreen(){
   const tonight = withNext.filter(({next})=>next && next < tomorrowMidnight).map(x=>x.m);
   const thisWeek = withNext.filter(({next})=>next && next >= tomorrowMidnight).map(x=>x.m);
 
-  if(view==='online') return <OnlineMeetingsScreen/>;
+  if(view==='online') return <OnlineMeetingsScreen onBack={()=>setView('mine')}/>;
 
   return (
     <>
@@ -2970,14 +3584,14 @@ function MeetingsListScreen(){
         <section style={{padding:'24px'}}>
           <Eyebrow style={{marginBottom:12}}>Discover</Eyebrow>
           <Pressable onClick={()=>setView('online')} style={{display:'flex',alignItems:'center',gap:14,padding:'14px 0',borderBottom:'1px solid var(--rule-soft)'}}>
-            <div style={{flex:1}}>
+            <div style={{flex:1,minWidth:0}}>
               <div className="serif" style={{fontSize:17}}>SA Online intergroup</div>
               <Stamp style={{marginTop:2,display:'block'}}>Open meetings via nextmeeting.org</Stamp>
             </div>
             <span className="serif" style={{color:'var(--muted)',fontSize:18}}>›</span>
           </Pressable>
           <Pressable onClick={()=>window.open('https://www.sa.org/meetings/?tsml-day=any&tsml-type=ONL','_blank')} style={{display:'flex',alignItems:'center',gap:14,padding:'14px 0'}}>
-            <div style={{flex:1}}>
+            <div style={{flex:1,minWidth:0}}>
               <div className="serif" style={{fontSize:17}}>SA world meeting finder</div>
               <Stamp style={{marginTop:2,display:'block'}}>sa.org directory of all meetings</Stamp>
             </div>
@@ -3018,7 +3632,7 @@ function MeetingDetailScreen(){
             <div className="serif" style={{fontSize:44,fontWeight:300,lineHeight:0.95,fontVariantNumeric:'oldstyle-nums',color:'var(--ink)'}}>
               {timeShort}<span style={{fontSize:18,color:'var(--muted)',marginLeft:4}}>{ampmShort}</span>
             </div>
-            <div style={{flex:1}}>
+            <div style={{flex:1,minWidth:0}}>
               <Stamp>{kindLabel}{m.duration?` · ${m.duration} min`:''}</Stamp>
               {m.host && <div className="serif" style={{fontSize:16,color:'var(--ink-2)',marginTop:4}}>{m.host}</div>}
               <Stamp style={{marginTop:4,display:'block',color:'var(--terra-ink)'}}>{weekdayBadge(m.weekdays)}</Stamp>
@@ -3254,7 +3868,7 @@ function ContactRow({c,last}){
   return (
     <Pressable onClick={()=>nav.push('detail',{id:c.id})} style={{display:'flex',alignItems:'center',gap:14,padding:'12px 0',borderBottom:last?'none':'1px solid var(--rule-soft)'}}>
       <InitialAvatar name={c.name} size={36}/>
-      <div style={{flex:1}}>
+      <div style={{flex:1,minWidth:0}}>
         <div className="serif" style={{fontSize:17}}>{c.name}</div>
         {c.tagLine && <Stamp style={{marginTop:2,display:'block'}}>{c.tagLine}</Stamp>}
       </div>
@@ -3287,7 +3901,7 @@ function PeopleListScreen(){
             <Eyebrow style={{marginBottom:14}}>Sponsor</Eyebrow>
             <Pressable onClick={()=>nav.push('detail',{id:sponsor.id})} style={{display:'flex',alignItems:'flex-start',gap:14,padding:'6px 0'}}>
               <InitialAvatar name={sponsor.name} accent size={44}/>
-              <div style={{flex:1}}>
+              <div style={{flex:1,minWidth:0}}>
                 <div className="serif" style={{fontSize:22,lineHeight:1.15}}>{sponsor.name}</div>
                 {sponsor.tagLine && <p className="serif" style={{fontSize:14,fontStyle:'italic',color:'var(--muted)',marginTop:4,marginBottom:0,textWrap:'pretty'}}>{sponsor.tagLine}</p>}
               </div>
@@ -3362,7 +3976,7 @@ function ContactDetailScreen(){
         <section style={{padding:'24px 24px 0'}}>
           <Eyebrow style={{marginBottom:12}}>Private · stored on this device</Eyebrow>
           <Pressable onClick={()=>setRevealed(r=>!r)} style={{display:'flex',alignItems:'center',gap:14,padding:'14px 0',borderBottom:'1px solid var(--rule-soft)'}}>
-            <div style={{flex:1}}>
+            <div style={{flex:1,minWidth:0}}>
               <Stamp>Phone</Stamp>
               <div style={{marginTop:2}}>
                 {c.phone
@@ -3391,7 +4005,7 @@ function ContactDetailScreen(){
           <section style={{padding:'28px 24px 0'}}>
             <Eyebrow style={{marginBottom:12}}>Step work sharing</Eyebrow>
             <Pressable onClick={()=>nav.goto('more','sponsor')} style={{padding:'14px 16px',border:'1px solid var(--rule)',borderRadius:8,background:'var(--terra-soft)',display:'flex',alignItems:'center',gap:12}}>
-              <div style={{flex:1}}>
+              <div style={{flex:1,minWidth:0}}>
                 <div className="serif" style={{fontSize:16,color:'var(--terra-ink)'}}>Sharing with {c.name}</div>
                 <Stamp style={{marginTop:2,display:'block',color:'var(--terra-ink)'}}>Manage which sections are visible</Stamp>
               </div>
@@ -3531,7 +4145,7 @@ function SwitchRow({label,time,initialOn}){
   const [on,setOn]=useState(!!initialOn);
   return (
     <div style={{display:'flex',alignItems:'center',gap:14,padding:'14px 0',borderBottom:'1px solid var(--rule-soft)'}}>
-      <div style={{flex:1}}>
+      <div style={{flex:1,minWidth:0}}>
         <div className="serif" style={{fontSize:17,color:on?'var(--ink)':'var(--muted)'}}>{label}</div>
         {time&&<Stamp style={{marginTop:2,display:'block'}}>{time}</Stamp>}
       </div>
@@ -3581,7 +4195,6 @@ function SponsorModeView({shared}){
                   {k<arr.length-1&&<span style={{margin:'0 8px',color:'var(--rule)'}}>·</span>}
                 </Fragment>
               ))}
-              {c.flag&&<Stamp style={{marginLeft:12,color:'var(--terra-ink)'}}>★ wants to discuss</Stamp>}
             </div>
           </div>
         ))}
@@ -3624,7 +4237,7 @@ function SponsorScreen(){
                 <div style={{width:44,height:44,borderRadius:'50%',background:'var(--surface)',border:'1px solid var(--terra-soft)',display:'flex',alignItems:'center',justifyContent:'center'}}>
                   <span className="serif" style={{fontSize:20,color:'var(--terra-ink)',fontStyle:'italic'}}>{sponsorInitial}</span>
                 </div>
-                <div style={{flex:1}}>
+                <div style={{flex:1,minWidth:0}}>
                   <div className="serif" style={{fontSize:17,color:'var(--terra-ink)'}}>{sponsorName}</div>
                   <Stamp style={{marginTop:2,display:'block',color:'var(--terra-ink)'}}>connected · last viewed 5 days ago</Stamp>
                 </div>
@@ -3636,7 +4249,7 @@ function SponsorScreen(){
               {STEP_SECTIONS.map((s,i)=>(
                 <Pressable key={s.id} onClick={()=>toggle(s.id)} style={{display:'flex',alignItems:'center',gap:14,padding:'14px 24px',borderBottom:'1px solid var(--rule-soft)'}}>
                   <span className="serif" style={{fontSize:12,color:'var(--terra)',fontStyle:'italic',width:22,fontVariantNumeric:'oldstyle-nums'}}>{s.roman}.</span>
-                  <div style={{flex:1}}>
+                  <div style={{flex:1,minWidth:0}}>
                     <div className="serif" style={{fontSize:17,color:shared.has(s.id)?'var(--ink)':'var(--muted)'}}>{s.title}</div>
                     <Stamp style={{marginTop:2,display:'block'}}>{s.step} · {s.pg}</Stamp>
                   </div>
@@ -3644,14 +4257,9 @@ function SponsorScreen(){
                 </Pressable>
               ))}
             </section>
-            <section style={{padding:'28px 24px 0'}}>
-              <Eyebrow style={{marginBottom:12}}>Also share</Eyebrow>
-              <SwitchRow label="Sponsor flag entries" initialOn={true}/>
-              <p className="serif" style={{fontSize:13,color:'var(--muted)',fontStyle:'italic',marginTop:8,lineHeight:1.5}}>Items you marked with the 🚩 flag in Causes & affects come along too.</p>
-            </section>
             <section style={{padding:'28px 24px 36px'}}>
               <Pressable onClick={()=>setSponsorMode(true)} style={{padding:'14px 16px',border:'1px solid var(--rule)',borderRadius:12,display:'flex',alignItems:'center',gap:14}}>
-                <div style={{flex:1}}>
+                <div style={{flex:1,minWidth:0}}>
                   <div className="serif" style={{fontSize:16}}>Preview what {sponsorName} sees</div>
                   <Stamp style={{marginTop:2,display:'block'}}>Step into the sponsor view</Stamp>
                 </div>
@@ -3682,7 +4290,7 @@ function ReadingsScreen(){
   function ReadingRow({r,last}){
     return (
       <div style={{display:'flex',alignItems:'flex-start',gap:14,padding:'12px 0',borderBottom:last?'none':'1px solid var(--rule-soft)'}}>
-        <div style={{flex:1}}>
+        <div style={{flex:1,minWidth:0}}>
           <div className="serif" style={{fontSize:17,color:'var(--ink)'}}>{r.title}</div>
           {(r.source||r.pg) && <Stamp style={{marginTop:2,display:'block'}}>{[r.source,r.pg].filter(Boolean).join(' · ')}</Stamp>}
         </div>
@@ -3793,7 +4401,7 @@ function ReminderRow({label, hint, onToggle, on, time, onTimeChange, extra}){
   return (
     <div style={{padding:'14px 0',borderBottom:'1px solid var(--rule-soft)'}}>
       <div style={{display:'flex',alignItems:'center',gap:14}}>
-        <div style={{flex:1}}>
+        <div style={{flex:1,minWidth:0}}>
           <div className="serif" style={{fontSize:17,color:on?'var(--ink)':'var(--muted)'}}>{label}</div>
           {hint && <Stamp style={{marginTop:2,display:'block'}}>{hint}</Stamp>}
         </div>
@@ -3906,21 +4514,21 @@ function SettingsScreen(){
         <section style={{padding:'24px 24px 40px'}}>
           <Eyebrow style={{marginBottom:14}}>Privacy</Eyebrow>
           <div style={{display:'flex',alignItems:'center',gap:14,padding:'14px 0',borderBottom:'1px solid var(--rule-soft)'}}>
-            <div style={{flex:1}}>
+            <div style={{flex:1,minWidth:0}}>
               <div className="serif" style={{fontSize:17,color:ui.lockFaceId?'var(--ink)':'var(--muted)'}}>Lock with Face ID / passcode</div>
               <Stamp style={{marginTop:2,display:'block'}}>Activates when this is wrapped as a mobile app.</Stamp>
             </div>
             <SwitchInk on={ui.lockFaceId} onToggle={()=>setUI({lockFaceId:!ui.lockFaceId})}/>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:14,padding:'14px 0',borderBottom:'1px solid var(--rule-soft)'}}>
-            <div style={{flex:1}}>
+            <div style={{flex:1,minWidth:0}}>
               <div className="serif" style={{fontSize:17,color:ui.blurInSwitcher?'var(--ink)':'var(--muted)'}}>Blur app in switcher</div>
               <Stamp style={{marginTop:2,display:'block'}}>Hides content from the OS task switcher.</Stamp>
             </div>
             <SwitchInk on={ui.blurInSwitcher} onToggle={()=>setUI({blurInSwitcher:!ui.blurInSwitcher})}/>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:14,padding:'14px 0'}}>
-            <div style={{flex:1}}>
+            <div style={{flex:1,minWidth:0}}>
               <div className="serif" style={{fontSize:17,color:ui.hideOnLockScreen?'var(--ink)':'var(--muted)'}}>Hide content on lock screen</div>
               <Stamp style={{marginTop:2,display:'block'}}>Suppresses previews on notifications.</Stamp>
             </div>
@@ -4143,7 +4751,7 @@ function MoreRootScreen(){
             <div style={{width:44,height:44,borderRadius:'50%',background:'var(--terra-soft)',display:'flex',alignItems:'center',justifyContent:'center'}}>
               <span className="serif" style={{fontSize:20,color:'var(--terra-ink)',fontStyle:'italic'}}>{initial}</span>
             </div>
-            <div style={{flex:1}}>
+            <div style={{flex:1,minWidth:0}}>
               <div className="serif" style={{fontSize:18}}>You — {displayName}</div>
               <Stamp style={{marginTop:2,display:'block'}}>{meta}</Stamp>
             </div>
@@ -4153,7 +4761,7 @@ function MoreRootScreen(){
         <section style={{padding:'20px 0 0'}}>
           {sections.map((s,i)=>(
             <Pressable key={s.id} onClick={()=>nav.push(s.id)} style={{display:'flex',alignItems:'flex-start',gap:14,padding:'16px 24px',borderBottom:'1px solid var(--rule-soft)',borderTop:i===0?'1px solid var(--rule)':'none'}}>
-              <div style={{flex:1}}>
+              <div style={{flex:1,minWidth:0}}>
                 <div className="serif" style={{fontSize:18,color:'var(--ink)'}}>{s.label}</div>
                 <Stamp style={{marginTop:2,display:'block'}}>{s.meta}</Stamp>
               </div>
@@ -4234,14 +4842,14 @@ function PracticeScreen(){
         <section style={{padding:'24px 24px 0'}}>
           <Eyebrow style={{marginBottom:14}}>Show on Today screen</Eyebrow>
           <Pressable onClick={()=>setPractice({showMorning:!practice.showMorning})} style={{display:'flex',alignItems:'center',gap:14,padding:'14px 0',borderBottom:'1px solid var(--rule-soft)'}}>
-            <div style={{flex:1}}>
+            <div style={{flex:1,minWidth:0}}>
               <div className="serif" style={{fontSize:17,color:practice.showMorning?'var(--ink)':'var(--muted)'}}>Morning prayers</div>
               <Stamp style={{marginTop:2,display:'block'}}>The intention + 17 short prayers</Stamp>
             </div>
             <SwitchInk on={practice.showMorning} onToggle={()=>setPractice({showMorning:!practice.showMorning})}/>
           </Pressable>
           <Pressable onClick={()=>setPractice({showEvening:!practice.showEvening})} style={{display:'flex',alignItems:'center',gap:14,padding:'14px 0'}}>
-            <div style={{flex:1}}>
+            <div style={{flex:1,minWidth:0}}>
               <div className="serif" style={{fontSize:17,color:practice.showEvening?'var(--ink)':'var(--muted)'}}>Evening review</div>
               <Stamp style={{marginTop:2,display:'block'}}>The constructive review + notes</Stamp>
             </div>

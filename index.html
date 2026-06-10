@@ -28,13 +28,16 @@
 <link rel="stylesheet" href="paper-ink.css"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;background:#e8e3da;}
+html,body{height:100%;background:var(--app-frame,#e8e3da);}
 body{display:flex;justify-content:center;}
-/* When installed as standalone PWA, paint the viewport background with the warm paper
-   tone so black-translucent iOS status bar shows our cream, not white. The AppBar
-   already pads its own content with env(safe-area-inset-top), so layout stays put. */
+/* When installed as standalone PWA, paint the viewport with the active theme's
+   frame tone so the translucent iOS status bar matches the app, not white. */
 @media (display-mode:standalone){
-  html,body{ background:#f4eee4; }
+  html,body{ background:var(--app-frame,#f4eee4); }
+}
+:root:not([data-theme="paper"]):not([data-theme="dusk"]) { --app-frame:#e8e3da; }
+@media (display-mode:standalone){
+  :root:not([data-theme="paper"]):not([data-theme="dusk"]) { --app-frame:#f4eee4; }
 }
 input,textarea,button{font-family:inherit;color:inherit;}
 textarea{box-sizing:border-box;width:100%;}
@@ -45,7 +48,7 @@ h1,h2,h3,h4{font-weight:400;}
 /* Phone default: centered narrow card */
 .sw-outer{
   min-height:100vh;width:100%;
-  background:#e8e3da;
+  background:var(--app-frame,#e8e3da);
   display:flex;justify-content:center;align-items:stretch;
 }
 .sw-card{
@@ -123,6 +126,10 @@ h1,h2,h3,h4{font-weight:400;}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script>
+/* qrcode-generator v2.0.4 (MIT, Kazuhiko Arase) — inlined for offline PWA use. Exposes window.qrcode. */
+(function(){var module={exports:{}},exports=module.exports;var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],f={},c=function(t,r){o=function(t){for(var r=new Array(t),e=0;e<t;e+=1){r[e]=new Array(t);for(var n=0;n<t;n+=1)r[e][n]=null}return r}(i=4*e+17),l(0,0),l(i-7,0),l(0,i-7),s(),h(),d(t,r),e>=7&&v(t),null==a&&(a=p(e,n,u)),w(a,r)},l=function(t,r){for(var e=-1;e<=7;e+=1)if(!(t+e<=-1||i<=t+e))for(var n=-1;n<=7;n+=1)r+n<=-1||i<=r+n||(o[t+e][r+n]=0<=e&&e<=6&&(0==n||6==n)||0<=n&&n<=6&&(0==e||6==e)||2<=e&&e<=4&&2<=n&&n<=4)},h=function(){for(var t=8;t<i-8;t+=1)null==o[t][6]&&(o[t][6]=t%2==0);for(var r=8;r<i-8;r+=1)null==o[6][r]&&(o[6][r]=r%2==0)},s=function(){for(var t=B.getPatternPosition(e),r=0;r<t.length;r+=1)for(var n=0;n<t.length;n+=1){var i=t[r],a=t[n];if(null==o[i][a])for(var u=-2;u<=2;u+=1)for(var f=-2;f<=2;f+=1)o[i+u][a+f]=-2==u||2==u||-2==f||2==f||0==u&&0==f}},v=function(t){for(var r=B.getBCHTypeNumber(e),n=0;n<18;n+=1){var a=!t&&1==(r>>n&1);o[Math.floor(n/3)][n%3+i-8-3]=a}for(n=0;n<18;n+=1){a=!t&&1==(r>>n&1);o[n%3+i-8-3][Math.floor(n/3)]=a}},d=function(t,r){for(var e=n<<3|r,a=B.getBCHTypeInfo(e),u=0;u<15;u+=1){var f=!t&&1==(a>>u&1);u<6?o[u][8]=f:u<8?o[u+1][8]=f:o[i-15+u][8]=f}for(u=0;u<15;u+=1){f=!t&&1==(a>>u&1);u<8?o[8][i-u-1]=f:u<9?o[8][15-u-1+1]=f:o[8][15-u-1]=f}o[i-8][8]=!t},w=function(t,r){for(var e=-1,n=i-1,a=7,u=0,f=B.getMaskFunction(r),c=i-1;c>0;c-=2)for(6==c&&(c-=1);;){for(var g=0;g<2;g+=1)if(null==o[n][c-g]){var l=!1;u<t.length&&(l=1==(t[u]>>>a&1)),f(n,c-g)&&(l=!l),o[n][c-g]=l,-1==(a-=1)&&(u+=1,a=7)}if((n+=e)<0||i<=n){n-=e,e=-e;break}}},p=function(t,r,e){for(var n=A.getRSBlocks(t,r),o=b(),i=0;i<e.length;i+=1){var a=e[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var u=0;for(i=0;i<n.length;i+=1)u+=n[i].dataCount;if(o.getLengthInBits()>8*u)throw"code length overflow. ("+o.getLengthInBits()+">"+8*u+")";for(o.getLengthInBits()+4<=8*u&&o.put(0,4);o.getLengthInBits()%8!=0;)o.putBit(!1);for(;!(o.getLengthInBits()>=8*u||(o.put(236,8),o.getLengthInBits()>=8*u));)o.put(17,8);return function(t,r){for(var e=0,n=0,o=0,i=new Array(r.length),a=new Array(r.length),u=0;u<r.length;u+=1){var f=r[u].dataCount,c=r[u].totalCount-f;n=Math.max(n,f),o=Math.max(o,c),i[u]=new Array(f);for(var g=0;g<i[u].length;g+=1)i[u][g]=255&t.getBuffer()[g+e];e+=f;var l=B.getErrorCorrectPolynomial(c),h=k(i[u],l.getLength()-1).mod(l);for(a[u]=new Array(l.getLength()-1),g=0;g<a[u].length;g+=1){var s=g+h.getLength()-a[u].length;a[u][g]=s>=0?h.getAt(s):0}}var v=0;for(g=0;g<r.length;g+=1)v+=r[g].totalCount;var d=new Array(v),w=0;for(g=0;g<n;g+=1)for(u=0;u<r.length;u+=1)g<i[u].length&&(d[w]=i[u][g],w+=1);for(g=0;g<o;g+=1)for(u=0;u<r.length;u+=1)g<a[u].length&&(d[w]=a[u][g],w+=1);return d}(o,n)};f.addData=function(t,r){var e=null;switch(r=r||"Byte"){case"Numeric":e=M(t);break;case"Alphanumeric":e=x(t);break;case"Byte":e=m(t);break;case"Kanji":e=L(t);break;default:throw"mode:"+r}u.push(e),a=null},f.isDark=function(t,r){if(t<0||i<=t||r<0||i<=r)throw t+","+r;return o[t][r]},f.getModuleCount=function(){return i},f.make=function(){if(e<1){for(var t=1;t<40;t++){for(var r=A.getRSBlocks(t,n),o=b(),i=0;i<u.length;i++){var a=u[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var g=0;for(i=0;i<r.length;i++)g+=r[i].dataCount;if(o.getLengthInBits()<=8*g)break}e=t}c(!1,function(){for(var t=0,r=0,e=0;e<8;e+=1){c(!0,e);var n=B.getLostPoint(f);(0==e||t>n)&&(t=n,r=e)}return r}())},f.createTableTag=function(t,r){t=t||2;var e="";e+='<table style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: "+(r=void 0===r?4*t:r)+"px;",e+='">',e+="<tbody>";for(var n=0;n<f.getModuleCount();n+=1){e+="<tr>";for(var o=0;o<f.getModuleCount();o+=1)e+='<td style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: 0px;",e+=" width: "+t+"px;",e+=" height: "+t+"px;",e+=" background-color: ",e+=f.isDark(n,o)?"#000000":"#ffffff",e+=";",e+='"/>';e+="</tr>"}return e+="</tbody>",e+="</table>"},f.createSvgTag=function(t,r,e,n){var o={};"object"==typeof arguments[0]&&(t=(o=arguments[0]).cellSize,r=o.margin,e=o.alt,n=o.title),t=t||2,r=void 0===r?4*t:r,(e="string"==typeof e?{text:e}:e||{}).text=e.text||null,e.id=e.text?e.id||"qrcode-description":null,(n="string"==typeof n?{text:n}:n||{}).text=n.text||null,n.id=n.text?n.id||"qrcode-title":null;var i,a,u,c,g=f.getModuleCount()*t+2*r,l="";for(c="l"+t+",0 0,"+t+" -"+t+",0 0,-"+t+"z ",l+='<svg version="1.1" xmlns="http://www.w3.org/2000/svg"',l+=o.scalable?"":' width="'+g+'px" height="'+g+'px"',l+=' viewBox="0 0 '+g+" "+g+'" ',l+=' preserveAspectRatio="xMinYMin meet"',l+=n.text||e.text?' role="img" aria-labelledby="'+y([n.id,e.id].join(" ").trim())+'"':"",l+=">",l+=n.text?'<title id="'+y(n.id)+'">'+y(n.text)+"</title>":"",l+=e.text?'<description id="'+y(e.id)+'">'+y(e.text)+"</description>":"",l+='<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>',l+='<path d="',a=0;a<f.getModuleCount();a+=1)for(u=a*t+r,i=0;i<f.getModuleCount();i+=1)f.isDark(a,i)&&(l+="M"+(i*t+r)+","+u+c);return l+='" stroke="transparent" fill="black"/>',l+="</svg>"},f.createDataURL=function(t,r){t=t||2,r=void 0===r?4*t:r;var e=f.getModuleCount()*t+2*r,n=r,o=e-r;return I(e,e,function(r,e){if(n<=r&&r<o&&n<=e&&e<o){var i=Math.floor((r-n)/t),a=Math.floor((e-n)/t);return f.isDark(a,i)?0:1}return 1})},f.createImgTag=function(t,r,e){t=t||2,r=void 0===r?4*t:r;var n=f.getModuleCount()*t+2*r,o="";return o+="<img",o+=' src="',o+=f.createDataURL(t,r),o+='"',o+=' width="',o+=n,o+='"',o+=' height="',o+=n,o+='"',e&&(o+=' alt="',o+=y(e),o+='"'),o+="/>"};var y=function(t){for(var r="",e=0;e<t.length;e+=1){var n=t.charAt(e);switch(n){case"<":r+="&lt;";break;case">":r+="&gt;";break;case"&":r+="&amp;";break;case'"':r+="&quot;";break;default:r+=n}}return r};return f.createASCII=function(t,r){if((t=t||1)<2)return function(t){t=void 0===t?2:t;var r,e,n,o,i,a=1*f.getModuleCount()+2*t,u=t,c=a-t,g={"██":"█","█ ":"▀"," █":"▄","  ":" "},l={"██":"▀","█ ":"▀"," █":" ","  ":" "},h="";for(r=0;r<a;r+=2){for(n=Math.floor((r-u)/1),o=Math.floor((r+1-u)/1),e=0;e<a;e+=1)i="█",u<=e&&e<c&&u<=r&&r<c&&f.isDark(n,Math.floor((e-u)/1))&&(i=" "),u<=e&&e<c&&u<=r+1&&r+1<c&&f.isDark(o,Math.floor((e-u)/1))?i+=" ":i+="█",h+=t<1&&r+1>=c?l[i]:g[i];h+="\n"}return a%2&&t>0?h.substring(0,h.length-a-1)+Array(a+1).join("▀"):h.substring(0,h.length-1)}(r);t-=1,r=void 0===r?2*t:r;var e,n,o,i,a=f.getModuleCount()*t+2*r,u=r,c=a-r,g=Array(t+1).join("██"),l=Array(t+1).join("  "),h="",s="";for(e=0;e<a;e+=1){for(o=Math.floor((e-u)/t),s="",n=0;n<a;n+=1)i=1,u<=n&&n<c&&u<=e&&e<c&&f.isDark(o,Math.floor((n-u)/t))&&(i=0),s+=i?g:l;for(o=0;o<t;o+=1)h+=s+"\n"}return h.substring(0,h.length-1)},f.renderTo2dContext=function(t,r){r=r||2;for(var e=f.getModuleCount(),n=0;n<e;n++)for(var o=0;o<e;o++)t.fillStyle=f.isDark(n,o)?"black":"white",t.fillRect(o*r,n*r,r,r)},f};t.stringToBytes=(t.stringToBytesFuncs={default:function(t){for(var r=[],e=0;e<t.length;e+=1){var n=t.charCodeAt(e);r.push(255&n)}return r}}).default,t.createStringToBytes=function(t,r){var e=function(){for(var e=S(t),n=function(){var t=e.read();if(-1==t)throw"eof";return t},o=0,i={};;){var a=e.read();if(-1==a)break;var u=n(),f=n()<<8|n();i[String.fromCharCode(a<<8|u)]=f,o+=1}if(o!=r)throw o+" != "+r;return i}(),n="?".charCodeAt(0);return function(t){for(var r=[],o=0;o<t.length;o+=1){var i=t.charCodeAt(o);if(i<128)r.push(i);else{var a=e[t.charAt(o)];"number"==typeof a?(255&a)==a?r.push(a):(r.push(a>>>8),r.push(255&a)):r.push(n)}}return r}};var r,e,n,o,i,a=1,u=2,f=4,c=8,g={L:1,M:0,Q:3,H:2},l=0,h=1,s=2,v=3,d=4,w=5,p=6,y=7,B=(r=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],e=1335,n=7973,i=function(t){for(var r=0;0!=t;)r+=1,t>>>=1;return r},(o={}).getBCHTypeInfo=function(t){for(var r=t<<10;i(r)-i(e)>=0;)r^=e<<i(r)-i(e);return 21522^(t<<10|r)},o.getBCHTypeNumber=function(t){for(var r=t<<12;i(r)-i(n)>=0;)r^=n<<i(r)-i(n);return t<<12|r},o.getPatternPosition=function(t){return r[t-1]},o.getMaskFunction=function(t){switch(t){case l:return function(t,r){return(t+r)%2==0};case h:return function(t,r){return t%2==0};case s:return function(t,r){return r%3==0};case v:return function(t,r){return(t+r)%3==0};case d:return function(t,r){return(Math.floor(t/2)+Math.floor(r/3))%2==0};case w:return function(t,r){return t*r%2+t*r%3==0};case p:return function(t,r){return(t*r%2+t*r%3)%2==0};case y:return function(t,r){return(t*r%3+(t+r)%2)%2==0};default:throw"bad maskPattern:"+t}},o.getErrorCorrectPolynomial=function(t){for(var r=k([1],0),e=0;e<t;e+=1)r=r.multiply(k([1,C.gexp(e)],0));return r},o.getLengthInBits=function(t,r){if(1<=r&&r<10)switch(t){case a:return 10;case u:return 9;case f:case c:return 8;default:throw"mode:"+t}else if(r<27)switch(t){case a:return 12;case u:return 11;case f:return 16;case c:return 10;default:throw"mode:"+t}else{if(!(r<41))throw"type:"+r;switch(t){case a:return 14;case u:return 13;case f:return 16;case c:return 12;default:throw"mode:"+t}}},o.getLostPoint=function(t){for(var r=t.getModuleCount(),e=0,n=0;n<r;n+=1)for(var o=0;o<r;o+=1){for(var i=0,a=t.isDark(n,o),u=-1;u<=1;u+=1)if(!(n+u<0||r<=n+u))for(var f=-1;f<=1;f+=1)o+f<0||r<=o+f||0==u&&0==f||a==t.isDark(n+u,o+f)&&(i+=1);i>5&&(e+=3+i-5)}for(n=0;n<r-1;n+=1)for(o=0;o<r-1;o+=1){var c=0;t.isDark(n,o)&&(c+=1),t.isDark(n+1,o)&&(c+=1),t.isDark(n,o+1)&&(c+=1),t.isDark(n+1,o+1)&&(c+=1),0!=c&&4!=c||(e+=3)}for(n=0;n<r;n+=1)for(o=0;o<r-6;o+=1)t.isDark(n,o)&&!t.isDark(n,o+1)&&t.isDark(n,o+2)&&t.isDark(n,o+3)&&t.isDark(n,o+4)&&!t.isDark(n,o+5)&&t.isDark(n,o+6)&&(e+=40);for(o=0;o<r;o+=1)for(n=0;n<r-6;n+=1)t.isDark(n,o)&&!t.isDark(n+1,o)&&t.isDark(n+2,o)&&t.isDark(n+3,o)&&t.isDark(n+4,o)&&!t.isDark(n+5,o)&&t.isDark(n+6,o)&&(e+=40);var g=0;for(o=0;o<r;o+=1)for(n=0;n<r;n+=1)t.isDark(n,o)&&(g+=1);return e+=Math.abs(100*g/r/r-50)/5*10},o),C=function(){for(var t=new Array(256),r=new Array(256),e=0;e<8;e+=1)t[e]=1<<e;for(e=8;e<256;e+=1)t[e]=t[e-4]^t[e-5]^t[e-6]^t[e-8];for(e=0;e<255;e+=1)r[t[e]]=e;var n={glog:function(t){if(t<1)throw"glog("+t+")";return r[t]},gexp:function(r){for(;r<0;)r+=255;for(;r>=256;)r-=255;return t[r]}};return n}();function k(t,r){if(void 0===t.length)throw t.length+"/"+r;var e=function(){for(var e=0;e<t.length&&0==t[e];)e+=1;for(var n=new Array(t.length-e+r),o=0;o<t.length-e;o+=1)n[o]=t[o+e];return n}(),n={getAt:function(t){return e[t]},getLength:function(){return e.length},multiply:function(t){for(var r=new Array(n.getLength()+t.getLength()-1),e=0;e<n.getLength();e+=1)for(var o=0;o<t.getLength();o+=1)r[e+o]^=C.gexp(C.glog(n.getAt(e))+C.glog(t.getAt(o)));return k(r,0)},mod:function(t){if(n.getLength()-t.getLength()<0)return n;for(var r=C.glog(n.getAt(0))-C.glog(t.getAt(0)),e=new Array(n.getLength()),o=0;o<n.getLength();o+=1)e[o]=n.getAt(o);for(o=0;o<t.getLength();o+=1)e[o]^=C.gexp(C.glog(t.getAt(o))+r);return k(e,0).mod(t)}};return n}var A=function(){var t=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],r=function(t,r){var e={};return e.totalCount=t,e.dataCount=r,e},e={};return e.getRSBlocks=function(e,n){var o=function(r,e){switch(e){case g.L:return t[4*(r-1)+0];case g.M:return t[4*(r-1)+1];case g.Q:return t[4*(r-1)+2];case g.H:return t[4*(r-1)+3];default:return}}(e,n);if(void 0===o)throw"bad rs block @ typeNumber:"+e+"/errorCorrectionLevel:"+n;for(var i=o.length/3,a=[],u=0;u<i;u+=1)for(var f=o[3*u+0],c=o[3*u+1],l=o[3*u+2],h=0;h<f;h+=1)a.push(r(c,l));return a},e}(),b=function(){var t=[],r=0,e={getBuffer:function(){return t},getAt:function(r){var e=Math.floor(r/8);return 1==(t[e]>>>7-r%8&1)},put:function(t,r){for(var n=0;n<r;n+=1)e.putBit(1==(t>>>r-n-1&1))},getLengthInBits:function(){return r},putBit:function(e){var n=Math.floor(r/8);t.length<=n&&t.push(0),e&&(t[n]|=128>>>r%8),r+=1}};return e},M=function(t){var r=a,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+2<r.length;)t.put(o(r.substring(n,n+3)),10),n+=3;n<r.length&&(r.length-n==1?t.put(o(r.substring(n,n+1)),4):r.length-n==2&&t.put(o(r.substring(n,n+2)),7))}},o=function(t){for(var r=0,e=0;e<t.length;e+=1)r=10*r+i(t.charAt(e));return r},i=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);throw"illegal char :"+t};return n},x=function(t){var r=u,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+1<r.length;)t.put(45*o(r.charAt(n))+o(r.charAt(n+1)),11),n+=2;n<r.length&&t.put(o(r.charAt(n)),6)}},o=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);if("A"<=t&&t<="Z")return t.charCodeAt(0)-"A".charCodeAt(0)+10;switch(t){case" ":return 36;case"$":return 37;case"%":return 38;case"*":return 39;case"+":return 40;case"-":return 41;case".":return 42;case"/":return 43;case":":return 44;default:throw"illegal char :"+t}};return n},m=function(r){var e=f,n=t.stringToBytes(r),o={getMode:function(){return e},getLength:function(t){return n.length},write:function(t){for(var r=0;r<n.length;r+=1)t.put(n[r],8)}};return o},L=function(r){var e=c,n=t.stringToBytesFuncs.SJIS;if(!n)throw"sjis not supported.";!function(){var t=n("友");if(2!=t.length||38726!=(t[0]<<8|t[1]))throw"sjis not supported."}();var o=n(r),i={getMode:function(){return e},getLength:function(t){return~~(o.length/2)},write:function(t){for(var r=o,e=0;e+1<r.length;){var n=(255&r[e])<<8|255&r[e+1];if(33088<=n&&n<=40956)n-=33088;else{if(!(57408<=n&&n<=60351))throw"illegal char at "+(e+1)+"/"+n;n-=49472}n=192*(n>>>8&255)+(255&n),t.put(n,13),e+=2}if(e<r.length)throw"illegal char at "+(e+1)}};return i},D=function(){var t=[],r={writeByte:function(r){t.push(255&r)},writeShort:function(t){r.writeByte(t),r.writeByte(t>>>8)},writeBytes:function(t,e,n){e=e||0,n=n||t.length;for(var o=0;o<n;o+=1)r.writeByte(t[o+e])},writeString:function(t){for(var e=0;e<t.length;e+=1)r.writeByte(t.charCodeAt(e))},toByteArray:function(){return t},toString:function(){var r="";r+="[";for(var e=0;e<t.length;e+=1)e>0&&(r+=","),r+=t[e];return r+="]"}};return r},S=function(t){var r=t,e=0,n=0,o=0,i={read:function(){for(;o<8;){if(e>=r.length){if(0==o)return-1;throw"unexpected end of file./"+o}var t=r.charAt(e);if(e+=1,"="==t)return o=0,-1;t.match(/^\s$/)||(n=n<<6|a(t.charCodeAt(0)),o+=6)}var i=n>>>o-8&255;return o-=8,i}},a=function(t){if(65<=t&&t<=90)return t-65;if(97<=t&&t<=122)return t-97+26;if(48<=t&&t<=57)return t-48+52;if(43==t)return 62;if(47==t)return 63;throw"c:"+t};return i},I=function(t,r,e){for(var n=function(t,r){var e=t,n=r,o=new Array(t*r),i={setPixel:function(t,r,n){o[r*e+t]=n},write:function(t){t.writeString("GIF87a"),t.writeShort(e),t.writeShort(n),t.writeByte(128),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(255),t.writeByte(255),t.writeByte(255),t.writeString(","),t.writeShort(0),t.writeShort(0),t.writeShort(e),t.writeShort(n),t.writeByte(0);var r=a(2);t.writeByte(2);for(var o=0;r.length-o>255;)t.writeByte(255),t.writeBytes(r,o,255),o+=255;t.writeByte(r.length-o),t.writeBytes(r,o,r.length-o),t.writeByte(0),t.writeString(";")}},a=function(t){for(var r=1<<t,e=1+(1<<t),n=t+1,i=u(),a=0;a<r;a+=1)i.add(String.fromCharCode(a));i.add(String.fromCharCode(r)),i.add(String.fromCharCode(e));var f,c,g,l=D(),h=(f=l,c=0,g=0,{write:function(t,r){if(t>>>r!=0)throw"length over";for(;c+r>=8;)f.writeByte(255&(t<<c|g)),r-=8-c,t>>>=8-c,g=0,c=0;g|=t<<c,c+=r},flush:function(){c>0&&f.writeByte(g)}});h.write(r,n);var s=0,v=String.fromCharCode(o[s]);for(s+=1;s<o.length;){var d=String.fromCharCode(o[s]);s+=1,i.contains(v+d)?v+=d:(h.write(i.indexOf(v),n),i.size()<4095&&(i.size()==1<<n&&(n+=1),i.add(v+d)),v=d)}return h.write(i.indexOf(v),n),h.write(e,n),h.flush(),l.toByteArray()},u=function(){var t={},r=0,e={add:function(n){if(e.contains(n))throw"dup key:"+n;t[n]=r,r+=1},size:function(){return r},indexOf:function(r){return t[r]},contains:function(r){return void 0!==t[r]}};return e};return i}(t,r),o=0;o<r;o+=1)for(var i=0;i<t;i+=1)n.setPixel(i,o,e(i,o));var a=D();n.write(a);for(var u=function(){var t=0,r=0,e=0,n="",o={},i=function(t){n+=String.fromCharCode(a(63&t))},a=function(t){if(t<0);else{if(t<26)return 65+t;if(t<52)return t-26+97;if(t<62)return t-52+48;if(62==t)return 43;if(63==t)return 47}throw"n:"+t};return o.writeByte=function(n){for(t=t<<8|255&n,r+=8,e+=1;r>=6;)i(t>>>r-6),r-=6},o.flush=function(){if(r>0&&(i(t<<6-r),t=0,r=0),e%3!=0)for(var o=3-e%3,a=0;a<o;a+=1)n+="="},o.toString=function(){return n},o}(),f=a.toByteArray(),c=0;c<f.length;c+=1)u.writeByte(f[c]);return u.flush(),"data:image/gif;base64,"+u};return t}();qrcode.stringToBytesFuncs["UTF-8"]=function(t){return function(t){for(var r=[],e=0;e<t.length;e++){var n=t.charCodeAt(e);n<128?r.push(n):n<2048?r.push(192|n>>6,128|63&n):n<55296||n>=57344?r.push(224|n>>12,128|n>>6&63,128|63&n):(e++,n=65536+((1023&n)<<10|1023&t.charCodeAt(e)),r.push(240|n>>18,128|n>>12&63,128|n>>6&63,128|63&n))}return r}(t)},function(t){"function"==typeof define&&define.amd?define([],t):"object"==typeof exports&&(module.exports=t())}(function(){return qrcode});;window.qrcode=qrcode;})();
+</script>
 <script type="text/babel">
 const { useState, useEffect, useRef, useCallback, createContext, useContext, Fragment } = React;
 
@@ -191,7 +198,6 @@ const SAMPLE = {
     {id:'p5',name:'Reggie',role:'Fellowship',phone:'(415) 555-0412',email:'–',lastSpoke:'4 days ago',meetings:6,note:''},
     {id:'p6',name:'Anne L.',role:'Fellowship',phone:'(415) 555-0553',email:'–',lastSpoke:'10 days ago',meetings:3,note:''},
   ],
-  sharedWithSponsor:['lists','causes'],
   readings:[
     {id:'rd1',title:'How It Works',source:'Big Book, ch. 5',pg:'58',favorite:true},
     {id:'rd2',title:'Step 4 — Resentment process',source:'Big Book',pg:'64–67',favorite:true},
@@ -213,7 +219,8 @@ const STEP_SECTIONS = [
   {id:'fear1', roman:'IV',  title:'Fear inventory',  step:'Step 4',   pg:'pg 67–68', status:'pending'},
   {id:'fear2', roman:'V',   title:'Exploration of fear', step:'12 & 12', pg:'pg 49–53', status:'pending'},
   {id:'sex',   roman:'VI',  title:'Sex relations',   step:'Step 4',   pg:'pg 68–71', status:'pending'},
-  {id:'eighth',roman:'VII', title:'Amends list',     step:'Step 8',   pg:'pg 76–77', status:'pending'},
+  {id:'defects',roman:'VII', title:'Defects & shortcomings', step:'Steps 6 & 7', pg:'12 & 12 pg 58', status:'pending'},
+  {id:'eighth',roman:'VIII',title:'Amends list',     step:'Steps 8 & 9', pg:'pg 76–77', status:'pending'},
 ];
 
 /* ── OUR FAULTS question schema (from Big Book pg 66–67, per Workshop Docs) ──
@@ -271,6 +278,7 @@ function inferSectionStatus(steps, id){
   if(id==='fear1'  && steps.fears.length>0)        return 'progress';
   if(id==='fear2'  && steps.fear2 && Object.values(steps.fear2).some(q=>q&&Object.keys(q).length>0)) return 'progress';
   if(id==='sex'    && steps.sexRelations && steps.sexRelations.length>0) return 'progress';
+  if(id==='defects'&& steps.defects && steps.defects.length>0) return 'progress';
   if(id==='eighth' && steps.amends.length>0)      return 'progress';
   return 'undone';
 }
@@ -469,16 +477,23 @@ function fmt12h(h, m, ampm){
   return `${parseInt(h,10)||12}:${mm} ${ampm}`;
 }
 
-/** Next occurrence Date for a weekly meeting at given hour/min on given weekdays */
+/** Next occurrence Date for a weekly meeting at given hour/min on given weekdays.
+   A meeting that has already STARTED but not yet ENDED still counts as the current/
+   next occurrence — it only rolls forward to the following week once it has finished
+   (start time + duration). This keeps an in-progress meeting in the "next" slot
+   instead of vanishing at its start time. (B4) */
 function nextOccurrence(meeting){
   if(!meeting.weekdays || meeting.weekdays.length===0) return null;
   const {h,m} = to24h(meeting.hour, meeting.minute, meeting.ampm);
+  const durationMs = (parseInt(meeting.duration,10)||60) * 60000;
   const now = new Date();
   for(let i=0;i<8;i++){
     const d = new Date(now);
     d.setDate(now.getDate()+i);
     d.setHours(h, m, 0, 0);
-    if(meeting.weekdays.includes(d.getDay()) && d.getTime() > now.getTime()){
+    // Keep the occurrence while it is still running: end time (start + duration)
+    // must be in the future, rather than the start time.
+    if(meeting.weekdays.includes(d.getDay()) && (d.getTime() + durationMs) > now.getTime()){
       return d;
     }
   }
@@ -674,6 +689,7 @@ const DEFAULT_STEPS_STATE = {
   sexRelations: [],  // {id, name(coded), q1..q12}
   sexIdeal: '',      // free text (instruction 8, kept separate from the list)
   amends: [],        // {id, resentmentId?, name, cause, harms, direct, living, complete}
+  defects: [],       // {id, name, withLife, withoutVision, prayer, inMorningPrayers} (Steps 6 & 7)
   sectionStatus: {}, // { [sectionId]: 'done'|'progress'|'undone' }
 };
 
@@ -830,15 +846,29 @@ function RemindersProvider({children}){
 /* ── UI SETTINGS (spiritual language, theme, type size, privacy switches) ── */
 const UI_SETTINGS_KEY = 'sw_ui';
 const DEFAULT_UI_SETTINGS = {
-  spiritualLanguage: 'hp',  // 'god' | 'hp' | 'none'
-  theme: 'paper',           // 'paper' | 'parchment' | 'dusk'
+  spiritualLanguage: 'hp',  // 'god' | 'hp' | 'hashem' | 'allah' | 'none' | 'custom'
+  customHigherPower: '',    // free-text term used when spiritualLanguage === 'custom'
+  theme: 'parchment',       // 'parchment' (warm, default look) | 'paper' (white) | 'dusk' (dark)
   typeSize: 'regular',      // 'small' | 'regular' | 'large'
   lockFaceId: false,
   blurInSwitcher: true,
   hideOnLockScreen: false,
+  reviewExpiryDays: 14,     // sponsor-side: imported reviews auto-wipe after N days (F6)
 };
 function loadUISettings(){
-  try{ const s=localStorage.getItem(UI_SETTINGS_KEY); return s?{...DEFAULT_UI_SETTINGS,...JSON.parse(s)}:{...DEFAULT_UI_SETTINGS}; }
+  try{
+    const s=localStorage.getItem(UI_SETTINGS_KEY);
+    if(!s) return {...DEFAULT_UI_SETTINGS};
+    const parsed = JSON.parse(s);
+    // Migration: before themes were wired, 'paper' WAS the warm look now called
+    // 'parchment'. Re-map so existing users keep their current appearance. Done
+    // once, flagged by _themeMigrated so a later genuine 'paper' pick isn't reverted.
+    if(!parsed._themeMigrated){
+      if(parsed.theme === 'paper') parsed.theme = 'parchment';
+      parsed._themeMigrated = true;
+    }
+    return {...DEFAULT_UI_SETTINGS, ...parsed};
+  }
   catch{ return {...DEFAULT_UI_SETTINGS}; }
 }
 function saveUISettings(s){ try{ localStorage.setItem(UI_SETTINGS_KEY, JSON.stringify(s)); }catch{} }
@@ -855,12 +885,26 @@ function UISettingsProvider({children}){
       return next;
     });
   },[]);
+  // Persist the one-time theme migration (loadUISettings may have re-mapped the
+  // legacy 'paper' value to 'parchment'); write it back so it sticks.
+  useEffect(()=>{ saveUISettings(ui); },[]); // eslint-disable-line react-hooks/exhaustive-deps
   // Apply type-size scale as a CSS variable on documentElement.
   useEffect(()=>{
     const scale = ui.typeSize==='small'?0.92:ui.typeSize==='large'?1.10:1.00;
     document.documentElement.style.setProperty('--type-scale', scale);
     document.documentElement.style.fontSize = `${Math.round(16*scale)}px`;
   },[ui.typeSize]);
+  // Apply the color theme by setting data-theme on <html>; CSS variable overrides
+  // for 'paper' (white) and 'dusk' (dark) live in paper-ink.css. 'parchment' = :root.
+  useEffect(()=>{
+    const t = (ui.theme==='paper'||ui.theme==='dusk') ? ui.theme : 'parchment';
+    document.documentElement.setAttribute('data-theme', t);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if(meta){
+      const c = t==='dusk' ? '#1a1722' : t==='paper' ? '#ffffff' : '#a25c3f';
+      meta.setAttribute('content', c);
+    }
+  },[ui.theme]);
   return (
     <UISettingsContext.Provider value={{ui, setUI}}>
       {children}
@@ -868,12 +912,32 @@ function UISettingsProvider({children}){
   );
 }
 
-/** Swap the spiritual-language token in prayer text. */
-function applySpiritualLanguage(text, mode){
+/** Resolve the user's chosen term for the Higher Power.
+   IMPORTANT: this only ever substitutes inside APP-AUTHORED text (prompts, prayers,
+   questions, instructions). Big Book / 12&12 QUOTATIONS are rendered verbatim and
+   must never be passed through this function — out of respect for the source
+   literature and its copyright. */
+function resolveHigherPower(ui){
+  const mode = ui && ui.spiritualLanguage;
+  if(mode==='god')    return 'God';
+  if(mode==='hashem') return 'Hashem';
+  if(mode==='allah')  return 'Allah';
+  if(mode==='none')   return 'the source within';
+  if(mode==='custom'){ const c=(ui.customHigherPower||'').trim(); return c || 'Higher Power'; }
+  return 'Higher Power'; // 'hp' (default) = leave as written
+}
+/** Swap the "Higher Power" token in app-authored text for the user's chosen term.
+   Accepts the ui settings object. Preserves a leading lowercase "higher power"
+   occurrence with a lowercased term (except proper names, which stay capitalized). */
+function applySpiritualLanguage(text, ui){
   if(!text) return text;
-  if(mode==='god') return text.replace(/\bHigher Power\b/g, 'God').replace(/\bhigher power\b/g, 'God');
-  if(mode==='none') return text.replace(/\bHigher Power\b/g, 'the source within').replace(/\bhigher power\b/g, 'the source within');
-  return text; // 'hp' = leave as written
+  const term = resolveHigherPower(ui);
+  if(term === 'Higher Power') return text; // no-op for 'hp'
+  // Proper names (God, Hashem, Allah) keep their capitalization even mid-sentence;
+  // descriptive phrases ('the source within') lowercase when replacing 'higher power'.
+  const isProperName = /^[A-Z][a-z]/.test(term) && !term.includes(' ');
+  const lowerTerm = isProperName ? term : term.charAt(0).toLowerCase()+term.slice(1);
+  return text.replace(/\bHigher Power\b/g, term).replace(/\bhigher power\b/g, lowerTerm);
 }
 
 function ProfileProvider({children}){
@@ -977,6 +1041,191 @@ function recordBackup(name, sizeBytes){
 function loadBackupHistory(){
   try{ return JSON.parse(localStorage.getItem(BACKUP_HISTORY_KEY)||'[]'); }catch{ return []; }
 }
+
+/* ── SPONSOR SHARE CRYPTO (F6) ──
+   Reuses deriveBackupKey (PBKDF2 250k → AES-GCM-256). Unlike a device backup,
+   each share is locked with a fresh random one-time key (not the user's PIN),
+   so the sponsor never needs the sponsee's PIN. The encrypted "box" travels by
+   any channel; the key travels separately (QR in person / short code remote). */
+const SHARE_VERSION = 1;
+const SHARE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O/1/I/L — safe to read aloud
+const SHARE_STEP_SECTIONS = [
+  {id:'resentments', label:'Resentments'},
+  {id:'causes',      label:'Causes & effects'},
+  {id:'faults',      label:'Our faults'},
+  {id:'fears',       label:'Fear inventory'},
+  {id:'fear2',       label:'Exploration of fear'},
+  {id:'sexRelations',label:'Sex & relationships'},
+  {id:'amends',      label:'Amends (8th step)'},
+  {id:'defects',     label:'Defects & shortcomings'},
+];
+
+function generateShareKey(len=10){
+  const arr = new Uint8Array(len); crypto.getRandomValues(arr);
+  let out=''; for(let i=0;i<len;i++) out += SHARE_ALPHABET[arr[i]%SHARE_ALPHABET.length];
+  return out.slice(0,5)+'-'+out.slice(5);
+}
+function normalizeShareKey(s){ return (s||'').toUpperCase().replace(/[^A-Z2-9]/g,''); }
+
+async function encryptShare(obj, shareKey){
+  const salt = randomSalt();
+  const key = await deriveBackupKey(normalizeShareKey(shareKey), salt);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const plaintext = new TextEncoder().encode(JSON.stringify(obj));
+  const cipher = new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, plaintext));
+  const b64 = (bytes)=>btoa(String.fromCharCode(...bytes));
+  return { kind:'sponsor-share', version:SHARE_VERSION, salt, iv:b64(iv), cipher:b64(cipher) };
+}
+async function decryptShare(blob, shareKey){
+  if(!blob || !blob.cipher || !blob.iv || !blob.salt) throw new Error('Not a valid shared file.');
+  const fromB64 = (s)=>Uint8Array.from(atob(s), c=>c.charCodeAt(0));
+  const key = await deriveBackupKey(normalizeShareKey(shareKey), blob.salt);
+  let plaintext;
+  try{ plaintext = await crypto.subtle.decrypt({name:'AES-GCM', iv:fromB64(blob.iv)}, key, fromB64(blob.cipher)); }
+  catch(e){ throw new Error('Wrong key or corrupted file.'); }
+  return JSON.parse(new TextDecoder().decode(plaintext));
+}
+
+/* Build the inner package the sponsee sends. stepsState = the loaded sw_steps object. */
+function packageForSponsor(stepsState, stepIds, fromName){
+  const payload = {};
+  stepIds.forEach(id=>{ if(stepsState && id in stepsState) payload[id]=stepsState[id]; });
+  return { v:SHARE_VERSION, dir:'to-sponsor', fromName:fromName||'', created:new Date().toISOString(), steps:stepIds, payload };
+}
+/* Build the reply the sponsor sends back (payload + their comments). */
+function packageReplyForSponsee(review, fromName){
+  return { v:SHARE_VERSION, dir:'to-sponsee', fromName:fromName||'', created:new Date().toISOString(),
+           steps:review.steps||[], payload:review.payload||{}, comments:review.comments||{} };
+}
+/* Encrypt a package and mint its one-time key in one call. */
+async function buildSharePackage(inner){
+  const key = generateShareKey();
+  const blob = await encryptShare(inner, key);
+  return { blob, key };
+}
+/* Decrypt + validate an incoming box. Returns the inner package. */
+async function openSharePackage(blob, shareKey){
+  const inner = await decryptShare(blob, shareKey);
+  if(!inner || (inner.dir!=='to-sponsor' && inner.dir!=='to-sponsee'))
+    throw new Error('This file is not a step-work share.');
+  return inner;
+}
+
+/* ── PENDING SHARE (F6.1) ──
+   A share's one-time key lives only on the result screen — but the remote flow
+   means leaving the app (to send the file), and coming back reloads + re-locks,
+   which used to wipe the key forever. So the freshly built share (key + box) is
+   kept in local storage until the user confirms Done, then wiped. 48-hour
+   timeout as a backstop. Same exposure as the rest of the local store: the
+   device already holds the plaintext step work behind the same PIN. */
+const PENDING_SHARE_KEY = 'sw_pending_share';
+const PENDING_SHARE_TTL_MS = 48*3600*1000;
+function savePendingShare(p){ try{ localStorage.setItem(PENDING_SHARE_KEY, JSON.stringify({...p, createdAt:Date.now()})); }catch{} }
+function loadPendingShare(){
+  try{
+    const p=JSON.parse(localStorage.getItem(PENDING_SHARE_KEY)||'null');
+    if(!p) return null;
+    if(Date.now()-(p.createdAt||0) > PENDING_SHARE_TTL_MS){ localStorage.removeItem(PENDING_SHARE_KEY); return null; }
+    return p;
+  }catch{ return null; }
+}
+function clearPendingShare(){ try{ localStorage.removeItem(PENDING_SHARE_KEY); }catch{} }
+/* 'feedback' is the legacy label kept so an in-flight pending share still resumes. */
+function isFeedbackLabel(l){ return l==='feedback'||l==='review-thoughts'; }
+
+/* ── SAVED SPONSOR NOTES (F6.3) ──
+   Sponsee side: the latest unlocked reply from the sponsor is kept on-device so
+   the notes can be revisited (Sponsor sharing → Notes). Replaced on the next
+   import; removable any time. Same privacy posture as the rest of the local
+   store — it's the sponsee's own work plus the sponsor's notes on it. */
+const SPONSOR_FEEDBACK_KEY='sw_sponsor_feedback';
+function saveSponsorFeedback(inner){
+  try{ localStorage.setItem(SPONSOR_FEEDBACK_KEY, JSON.stringify({
+    savedAt:new Date().toISOString(), fromName:inner.fromName||'',
+    steps:inner.steps||[], payload:inner.payload||{}, comments:inner.comments||{},
+  })); }catch{}
+}
+function loadSponsorFeedback(){ try{ return JSON.parse(localStorage.getItem(SPONSOR_FEEDBACK_KEY)||'null'); }catch{ return null; } }
+function clearSponsorFeedback(){ try{ localStorage.removeItem(SPONSOR_FEEDBACK_KEY); }catch{} }
+
+/* ── SPONSEE REVIEWS STORE (F6) ──
+   Sponsor-side only. Imported reviews are filed UNDER the sponsee's contact id,
+   kept separate from the sponsor's own step work so the two never mix. Each
+   review carries an expiry; purgeExpiredReviews() runs on app launch and drops
+   anything past its date (the 14-day self-destruct). Decrypted payloads live
+   only here in the app's local store — never written out as a plain file. */
+const SPONSEE_REVIEWS_KEY = 'sw_sponsee_reviews';
+const DAY_MS = 86400000;
+
+function loadSponseeReviews(){
+  try{ return JSON.parse(localStorage.getItem(SPONSEE_REVIEWS_KEY)||'{}') || {}; }
+  catch{ return {}; }
+}
+function saveSponseeReviews(obj){ try{ localStorage.setItem(SPONSEE_REVIEWS_KEY, JSON.stringify(obj)); }catch{} }
+
+function reviewExpiryDays(){
+  try{ const ui=JSON.parse(localStorage.getItem(UI_SETTINGS_KEY)||'{}'); return ui.reviewExpiryDays || 14; }
+  catch{ return 14; }
+}
+
+/* File a freshly-imported review under a sponsee contact id. */
+function addSponseeReview(contactId, inner){
+  const all = loadSponseeReviews();
+  const now = Date.now();
+  const days = reviewExpiryDays();
+  const review = {
+    reviewId:  'r_'+now.toString(36)+Math.random().toString(36).slice(2,6),
+    importedAt: new Date(now).toISOString(),
+    expiresAt:  new Date(now + days*DAY_MS).toISOString(),
+    sourceName: inner.fromName || '',
+    steps:      inner.steps || [],
+    payload:    inner.payload || {},
+    comments:   inner.comments || {},   // sponsor's notes, keyed by section or section:itemId
+    sentBackAt: null,
+  };
+  all[contactId] = [review, ...(all[contactId]||[])];
+  saveSponseeReviews(all);
+  return review;
+}
+
+function updateSponseeReview(contactId, reviewId, patch){
+  const all = loadSponseeReviews();
+  const list = all[contactId]||[];
+  all[contactId] = list.map(r=> r.reviewId===reviewId ? {...r, ...patch} : r);
+  saveSponseeReviews(all);
+}
+function removeSponseeReview(contactId, reviewId){
+  const all = loadSponseeReviews();
+  const list = (all[contactId]||[]).filter(r=>r.reviewId!==reviewId);
+  if(list.length) all[contactId]=list; else delete all[contactId];
+  saveSponseeReviews(all);
+}
+
+/* days left until expiry (negative = already expired). */
+function reviewDaysLeft(review){
+  if(!review || !review.expiresAt) return null;
+  return Math.ceil((new Date(review.expiresAt).getTime() - Date.now()) / DAY_MS);
+}
+
+/* The 14-day self-destruct. Runs once on app launch. Returns count purged. */
+function purgeExpiredReviews(){
+  const all = loadSponseeReviews();
+  const now = Date.now();
+  let purged = 0, changed = false;
+  for(const cid of Object.keys(all)){
+    const kept = (all[cid]||[]).filter(r=>{
+      const alive = r.expiresAt && new Date(r.expiresAt).getTime() > now;
+      if(!alive) purged++;
+      return alive;
+    });
+    if(kept.length !== (all[cid]||[]).length){ changed = true; }
+    if(kept.length) all[cid]=kept; else delete all[cid];
+  }
+  if(changed) saveSponseeReviews(all);
+  return purged;
+}
+
+
 
 /** PIN gate: setup on first run, ask on every refresh. */
 function PinGate({children}){
@@ -1418,7 +1667,7 @@ function ExpandableAnswer({n, question, hint, value, open, onToggle, onChange, p
 
 function SegPills({value,onChange,options}){
   return (
-    <div style={{display:'flex',gap:0,borderBottom:'1px solid var(--rule)',marginBottom:4}}>
+    <div style={{display:'flex',flexWrap:'wrap',gap:0,borderBottom:'1px solid var(--rule)',marginBottom:4}}>
       {options.map(opt=>{
         const active=value===opt.value;
         return (
@@ -1473,6 +1722,37 @@ function Scripture({children,cite,style={}}){
 function NoteBox({children,style={}}){
   return (
     <div style={{padding:'14px 16px',borderLeft:'2px solid var(--terra-soft)',background:'rgba(214,165,140,0.05)',borderRadius:'0 6px 6px 0',...style}}>
+      <p className="serif" style={{fontSize:15,lineHeight:1.55,color:'var(--ink-2)',textWrap:'pretty',margin:0}}>{children}</p>
+    </div>
+  );
+}
+
+/* First-use instruction for a step screen. Shows an expanded calm callout the first
+   time a screen is opened (tracked per-id in localStorage). Once dismissed it
+   collapses to a small "How this works" affordance the user can re-open any time —
+   prominent on first use, never permanently in the way. (F4) */
+const HINT_KEY_PREFIX = 'sw_hint_seen_';
+function FirstUseHint({id, title, children}){
+  const storeKey = HINT_KEY_PREFIX + id;
+  const [seen, setSeen] = useState(()=>{ try{ return localStorage.getItem(storeKey)==='1'; }catch{ return false; } });
+  const [open, setOpen] = useState(()=>{ try{ return localStorage.getItem(storeKey)!=='1'; }catch{ return true; } });
+  const dismiss = ()=>{ try{ localStorage.setItem(storeKey,'1'); }catch{} setSeen(true); setOpen(false); };
+  if(!open){
+    return (
+      <Pressable onClick={()=>setOpen(true)} style={{display:'inline-flex',alignItems:'center',gap:8,padding:'8px 0'}}>
+        <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:18,height:18,borderRadius:999,border:'1px solid var(--terra-soft)',color:'var(--terra-ink)',fontSize:11,fontStyle:'italic',fontFamily:'Newsreader,Georgia,serif'}}>i</span>
+        <span className="serif" style={{fontSize:13,color:'var(--terra-ink)',fontStyle:'italic'}}>How this works</span>
+      </Pressable>
+    );
+  }
+  return (
+    <div style={{padding:'16px 18px',border:'1px solid var(--terra-soft)',background:'rgba(214,165,140,0.07)',borderRadius:10,position:'relative'}}>
+      <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:12,marginBottom:6}}>
+        <span className="eyebrow" style={{color:'var(--terra-ink)'}}>{title||'How this works'}</span>
+        <Pressable onClick={dismiss} style={{padding:'2px 4px',flexShrink:0}}>
+          <span className="serif" style={{fontSize:14,color:'var(--muted)'}}>{seen?'close':'got it ✓'}</span>
+        </Pressable>
+      </div>
       <p className="serif" style={{fontSize:15,lineHeight:1.55,color:'var(--ink-2)',textWrap:'pretty',margin:0}}>{children}</p>
     </div>
   );
@@ -1725,6 +2005,8 @@ function MorningScreen(){
   const nav=useNav();
   const {practice, prayers, setPractice}=usePractice();
   const {ui}=useUISettings();
+  const {steps}=useSteps();
+  const defectPrayers=(steps.defects||[]).filter(d=>d.inMorningPrayers && d.prayer && d.prayer.trim());
   const {daily, updateDay, toggleMorning}=useDaily();
   const dayKey = practiceDayKey(practice.prayerResetHour, practice.prayerResetMinute);
   const todayEntry = daily[dayKey] || { intention:'', morningChecks:[] };
@@ -1748,7 +2030,7 @@ function MorningScreen(){
         }/>
       <ScreenBody>
         <section style={{padding:'4px 24px 0'}}>
-          <p className="serif" style={{fontSize:18,fontStyle:'italic',color:'var(--ink-2)',lineHeight:1.55,textWrap:'pretty',margin:0}}>{applySpiritualLanguage('"On awakening let us think about the twenty-four hours ahead."', ui.spiritualLanguage)}</p>
+          <p className="serif" style={{fontSize:18,fontStyle:'italic',color:'var(--ink-2)',lineHeight:1.55,textWrap:'pretty',margin:0}}>{'"On awakening let us think about the twenty-four hours ahead."'}</p>
           <Stamp style={{marginTop:8,display:'block'}}>Big Book · pg 86</Stamp>
         </section>
         {!editingPrayers && (<>
@@ -1771,12 +2053,27 @@ function MorningScreen(){
                   <HandCheck checked={on}/>
                   <p className="serif" style={{flex:1,fontSize:16,lineHeight:1.55,color:on?'var(--muted)':'var(--ink)',textDecoration:on?'line-through':'none',textDecorationColor:'var(--terra-soft)',textWrap:'pretty',margin:0}}>
                     <span className="serif" style={{color:'var(--terra)',fontSize:13,fontStyle:'italic',marginRight:8,fontVariantNumeric:'oldstyle-nums'}}>{i+1}</span>
-                    {applySpiritualLanguage(p, ui.spiritualLanguage)}
+                    {applySpiritualLanguage(p, ui)}
                   </p>
                 </Pressable>
               );
             })}
           </section>
+          {defectPrayers.length>0 && (
+            <section style={{padding:'28px 24px 0'}}>
+              <Eyebrow style={{marginBottom:6}}>Removal prayers · steps 6 & 7</Eyebrow>
+              <Stamp style={{display:'block',marginBottom:12}}>Carried from your defects work. Edit or unflag them on the Defects screen.</Stamp>
+              {defectPrayers.map((d)=>(
+                <div key={d.id} style={{display:'flex',alignItems:'flex-start',gap:14,padding:'12px 0',borderBottom:'1px solid var(--rule-soft)'}}>
+                  <span aria-hidden="true" style={{flexShrink:0,marginTop:4,width:6,height:6,borderRadius:'50%',background:'var(--terra)'}}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <Stamp style={{display:'block',color:'var(--terra-ink)',marginBottom:2}}>{d.name}</Stamp>
+                    <p className="serif" style={{fontSize:16,lineHeight:1.55,color:'var(--ink)',textWrap:'pretty',margin:0}}>{d.prayer}</p>
+                  </div>
+                </div>
+              ))}
+            </section>
+          )}
           <section style={{padding:'32px 24px 28px'}}>
             <p className="serif" style={{fontSize:14,color:'var(--muted)',fontStyle:'italic',textAlign:'center',lineHeight:1.65,textWrap:'pretty'}}>We pause, when agitated or doubtful, and ask for the right thought or action.</p>
             <Stamp style={{display:'block',textAlign:'center',marginTop:8}}>Big Book · pg 87</Stamp>
@@ -1814,6 +2111,7 @@ function MorningScreen(){
 
 function EveningScreen(){
   const nav=useNav();
+  const {ui}=useUISettings();
   const {practice}=usePractice();
   const {daily, updateDay, toggleEvening}=useDaily();
   const dayKey = practiceDayKey(practice.prayerResetHour, practice.prayerResetMinute);
@@ -1845,7 +2143,7 @@ function EveningScreen(){
                   return (
                     <Pressable key={i} onClick={()=>toggleEvening(dayKey, i)} style={{display:'flex',alignItems:'flex-start',gap:14,padding:'12px 0',borderBottom:k<qs.length-1?'1px solid var(--rule-soft)':'none'}}>
                       <HandCheck checked={on} size={18}/>
-                      <p className="serif" style={{flex:1,fontSize:15,lineHeight:1.5,color:on?'var(--muted)':'var(--ink)',textDecoration:on?'line-through':'none',textDecorationColor:'var(--terra-soft)',textWrap:'pretty',margin:0}}>{q}</p>
+                      <p className="serif" style={{flex:1,fontSize:15,lineHeight:1.5,color:on?'var(--muted)':'var(--ink)',textDecoration:on?'line-through':'none',textDecorationColor:'var(--terra-soft)',textWrap:'pretty',margin:0}}>{applySpiritualLanguage(q, ui)}</p>
                     </Pressable>
                   );
                 })}
@@ -1911,6 +2209,7 @@ function JournalScreen(){
 
 function JournalDayScreen(){
   const nav=useNav();
+  const {ui}=useUISettings();
   const {daily, removeDay}=useDaily();
   const {prayers}=usePractice();
   const dayKey = nav.params && nav.params.key;
@@ -1944,7 +2243,7 @@ function JournalDayScreen(){
           <section style={{padding:'22px 24px'}}>
             <Eyebrow style={{marginBottom:10}}>Morning prayers · {checkedPrayers.length} of {prayers.length}</Eyebrow>
             {checkedPrayers.map((p,i)=>(
-              <p key={i} className="serif" style={{fontSize:15,color:'var(--ink-2)',lineHeight:1.55,margin:'8px 0 0',textWrap:'pretty'}}>· {p}</p>
+              <p key={i} className="serif" style={{fontSize:15,color:'var(--ink-2)',lineHeight:1.55,margin:'8px 0 0',textWrap:'pretty'}}>· {applySpiritualLanguage(p, ui)}</p>
             ))}
           </section>
         </>)}
@@ -1953,7 +2252,7 @@ function JournalDayScreen(){
           <section style={{padding:'22px 24px'}}>
             <Eyebrow style={{marginBottom:10}}>Evening review · {checkedEvenings.length} of {EVENING_QS.length}</Eyebrow>
             {checkedEvenings.map((q,i)=>(
-              <p key={i} className="serif" style={{fontSize:15,color:'var(--ink-2)',lineHeight:1.55,margin:'8px 0 0',textWrap:'pretty'}}>· {q.q}</p>
+              <p key={i} className="serif" style={{fontSize:15,color:'var(--ink-2)',lineHeight:1.55,margin:'8px 0 0',textWrap:'pretty'}}>· {applySpiritualLanguage(q.q, ui)}</p>
             ))}
           </section>
         </>)}
@@ -2003,6 +2302,7 @@ function StepsOverviewScreen(){
   const {steps, setSectionStatus} = useSteps();
   const groups=[
     {step:'Step 4 — Inventory',ids:['lists','causes','faults','fear1','fear2','sex']},
+    {step:'Steps 6 & 7 — Defects & shortcomings',ids:['defects']},
     {step:'Steps 8 & 9 — Amends',ids:['eighth']},
   ];
   /** Shared with Home so the two screens never disagree about status. */
@@ -2097,6 +2397,9 @@ function ResentmentListScreen(){
     <>
       <AppBar eyebrow="Step 4 · pg 64" title="Resentment list"/>
       <ScreenBody>
+        <section style={{padding:'12px 24px 0'}}>
+          <FirstUseHint id="resent" title="Step 4 · Resentment list">List every person, institution, or principle you resent — one at a time, no editing. New entries are added at the top. Each name carries forward into Causes, Faults, Fear, and Amends, so start here.</FirstUseHint>
+        </section>
         <section style={{padding:'4px 24px 0'}}>
           <Scripture cite="Big Book, pg 65">"We went back through our lives. Nothing counted but thoroughness and honesty."</Scripture>
         </section>
@@ -2206,14 +2509,11 @@ function ResentmentAddScreen(){
 
   if(isEdit) return (
     <>
-      <datalist id="resent-name-suggestions">
-        {[...new Set(steps.resentments.map(r=>r.name).filter(Boolean))].map(n=><option key={n} value={n}/>)}
-      </datalist>
       <AppBar eyebrow="Edit entry" title="A name comes to mind" right={<ButtonText onClick={saveSingle}>save →</ButtonText>}/>
       <ScreenBody>
         <section style={{padding:'12px 24px 24px'}}>
           <Eyebrow style={{marginBottom:4}}>Name or description</Eyebrow>
-          <SerifInput value={name} onChange={setName} autoFocus placeholder="e.g. Dad, Mrs. K., the court…" list="resent-name-suggestions"/>
+          <SerifInput value={name} onChange={setName} autoFocus placeholder="e.g. Dad, Mrs. K., the court…"/>
           {nameDup && <p className="serif" style={{fontSize:13,color:'var(--terra-ink)',fontStyle:'italic',marginTop:6}}>Already on your list — you can still save it.</p>}
           <div style={{marginTop:32}}>
             <Eyebrow style={{marginBottom:12}}>What are they?</Eyebrow>
@@ -2229,18 +2529,9 @@ function ResentmentAddScreen(){
   );
 
   const filledCount = rows.filter(r=>r.name.trim()).length;
-  // Autocomplete source: every distinct name already on the resentment list.
-  // Helps prevent duplicate entries by surfacing existing names as the user types.
-  const nameSuggestions = React.useMemo(
-    ()=>[...new Set(steps.resentments.map(r=>r.name).filter(Boolean))].sort((a,b)=>a.localeCompare(b)),
-    [steps.resentments]
-  );
 
   return (
     <>
-      <datalist id="resent-name-suggestions">
-        {nameSuggestions.map(n=><option key={n} value={n}/>)}
-      </datalist>
       <AppBar eyebrow="New entries" title="Names come to mind" right={<ButtonText onClick={saveBulk}>save {filledCount>0?`(${filledCount}) `:''}→</ButtonText>}/>
       <ScreenBody>
         <section style={{padding:'12px 24px 0'}}>
@@ -2271,7 +2562,7 @@ function ResentmentAddScreen(){
               <div style={{minWidth:0}}>
                 <input value={row.name} onChange={(e)=>updateRow(i,'name',e.target.value)}
                   placeholder="Dad, Mrs. K., the court…" autoFocus={i===0}
-                  list="resent-name-suggestions" autoComplete="off"
+                  autoComplete="off"
                   style={{width:'100%',padding:'8px 0',background:'transparent',border:0,borderBottom:'1px solid var(--rule-soft)',fontFamily:'Newsreader,Georgia,serif',fontSize:16,color:'var(--ink)',outline:'none'}}/>
                 {rowDup && <span className="serif" style={{fontSize:12,color:'var(--terra-ink)',fontStyle:'italic'}}>already on list</span>}
               </div>
@@ -2316,6 +2607,9 @@ function CausesScreen(){
     <>
       <AppBar eyebrow="II · Step 4 · pg 64–65" title="Causes & affects"/>
       <ScreenBody>
+        <section style={{padding:'12px 24px 0'}}>
+          <FirstUseHint id="causes" title="Step 4 · Causes & affects">For each name from your resentment list, write the cause and tap which instincts it affected. Focus on the causes — you can refine the affects later with your sponsor.</FirstUseHint>
+        </section>
         <section style={{padding:'4px 24px 0'}}>
           <Scripture cite="Big Book, pg 64–65">"On our grudge list we set opposite each name our injuries. Was it our self-esteem, our security, our ambitions, our personal, or sex relations, which had been interfered with?"</Scripture>
         </section>
@@ -2452,6 +2746,9 @@ function FaultsScreen(){
     <>
       <AppBar eyebrow="III · Step 4 · pg 66–67" title="Our faults"/>
       <ScreenBody>
+        <section style={{padding:'12px 24px 0'}}>
+          <FirstUseHint id="faults" title="Step 4 · Our faults">Each cause you worked carries here. For every one, answer where you were selfish, dishonest, self-seeking, or afraid — keeping the focus on your part, not theirs.</FirstUseHint>
+        </section>
         <section style={{padding:'4px 24px 0'}}>
           <Scripture cite="Big Book, pg 66–67">"We turned back to the list… we resolutely looked for our own mistakes. Where were we to blame?"</Scripture>
         </section>
@@ -2620,6 +2917,9 @@ function Fear1Screen(){
     <>
       <AppBar eyebrow="IV · Step 4 · pg 67–68" title="Fear inventory"/>
       <ScreenBody>
+        <section style={{padding:'12px 24px 0'}}>
+          <FirstUseHint id="fear1" title="Step 4 · Fear inventory">Your causes auto-populate here as fears. Tap the categories each fear belongs to. You can also add a fear that has no resentment behind it.</FirstUseHint>
+        </section>
         <section style={{padding:'4px 24px 0'}}>
           <Scripture cite="Big Book, pg 67–68">"Where had we been selfish, dishonest, self-seeking and frightened? We reviewed our fears thoroughly. We asked ourselves why we had them."</Scripture>
         </section>
@@ -2828,8 +3128,11 @@ function Fear2Screen(){
     <>
       <AppBar eyebrow="V · 12 & 12 · pg 49–53" title="Exploration of fear"/>
       <ScreenBody>
+        <section style={{padding:'12px 24px 0'}}>
+          <FirstUseHint id="fear2" title="Exploration of fear">Take each fear category in turn and answer the same nine questions. The quotes are here for reflection — sit with them as you write.</FirstUseHint>
+        </section>
         <section style={{padding:'4px 24px 0'}}>
-          <Scripture cite="12 & 12, pg 49">{applySpiritualLanguage('"Unreasonable fear that our instincts will not be satisfied drives us to covet the possessions of others, to lust for sex and power, to become angry when our instinctive demands are threatened, to be envious when the ambitions of others seem to be realized while ours are not."', ui.spiritualLanguage)}</Scripture>
+          <Scripture cite="12 & 12, pg 49">"Unreasonable fear that our instincts will not be satisfied drives us to covet the possessions of others, to lust for sex and power, to become angry when our instinctive demands are threatened, to be envious when the ambitions of others seem to be realized while ours are not."</Scripture>
         </section>
         <section style={{padding:'20px 24px 0'}}>
           <NoteBox>
@@ -2901,8 +3204,8 @@ function Fear2CategoryScreen(){
           {FEAR2_QUESTIONS.map((q,i)=>(
             <ExpandableAnswer key={q.key}
               n={i+1}
-              question={applySpiritualLanguage(q.q, ui.spiritualLanguage)}
-              hint={q.hint?applySpiritualLanguage(q.hint, ui.spiritualLanguage):undefined}
+              question={applySpiritualLanguage(q.q, ui)}
+              hint={q.hint?applySpiritualLanguage(q.hint, ui):undefined}
               value={answers[q.key]}
               open={openKey===q.key}
               onToggle={()=>toggle(q.key)}
@@ -3060,8 +3363,11 @@ function AmendsScreen(){
 
   return (
     <>
-      <AppBar eyebrow="VII · Steps 8 & 9 · pg 76–84" title="Amends list"/>
+      <AppBar eyebrow="VIII · Steps 8 & 9 · pg 76–84" title="Amends list"/>
       <ScreenBody>
+        <section style={{padding:'12px 24px 0'}}>
+          <FirstUseHint id="amends" title="Steps 8 & 9 · Amends">Names and causes carry over from your resentments. For each person, list the harms, choose the amends type, and move them through the stages as you go.</FirstUseHint>
+        </section>
         <section style={{padding:'4px 24px 0'}}>
           <Scripture cite="Big Book, pg 59">"Made a list of all persons we had harmed and became willing to make amends to them all."</Scripture>
         </section>
@@ -3201,6 +3507,9 @@ function SexScreen(){
     <>
       <AppBar eyebrow="VI · Step 4 · pg 68–71" title="Sex relations"/>
       <ScreenBody>
+        <section style={{padding:'12px 24px 0'}}>
+          <FirstUseHint id="sex" title="Step 4 · Sex relations">Use initials or codes only — never real names. Define your ideal at the top, then answer the twelve questions for each relationship.</FirstUseHint>
+        </section>
         <section style={{padding:'4px 24px 0'}}>
           <NoteBox style={{borderColor:'var(--terra)'}}>
             <span className="serif" style={{fontWeight:600,color:'var(--terra-ink)'}}>Use of initials or codes is mandatory.</span>{' '}
@@ -3208,7 +3517,7 @@ function SexScreen(){
           </NoteBox>
         </section>
         <section style={{padding:'18px 24px 0'}}>
-          <Scripture cite="Big Book, pg 70">{applySpiritualLanguage('"We earnestly pray for the right ideal, for guidance in each questionable situation, for sanity, and for the strength to do the right thing."', ui.spiritualLanguage)}</Scripture>
+          <Scripture cite="Big Book, pg 70">"We earnestly pray for the right ideal, for guidance in each questionable situation, for sanity, and for the strength to do the right thing."</Scripture>
         </section>
 
         <section style={{padding:'24px 24px 0'}}>
@@ -3294,8 +3603,8 @@ function SexEditScreen(){
           {SEX_QUESTIONS.map((q,i)=>(
             <ExpandableAnswer key={q.key}
               n={i+1}
-              question={applySpiritualLanguage(q.q, ui.spiritualLanguage)}
-              hint={q.hint?applySpiritualLanguage(q.hint, ui.spiritualLanguage):undefined}
+              question={applySpiritualLanguage(q.q, ui)}
+              hint={q.hint?applySpiritualLanguage(q.hint, ui):undefined}
               value={answers[q.key]}
               open={openKey===q.key}
               onToggle={()=>toggle(q.key)}
@@ -3332,6 +3641,241 @@ function StubScreen({section}){
   );
 }
 
+/* ─────────────────────────────────────────────
+   STEPS 6 & 7 — Defects & Shortcomings  (F3)
+   Content from STEP_CONTENT_REFERENCE.md (Step-6 worksheet, verbatim).
+   Three carry-forward phases like Step 4:
+     1. List your defects + a line on life WITH each
+     2. A vision for life WITHOUT each
+     3. A removal prayer per defect (+ flag for morning prayers)
+   Step 7 is realized through Phase 3 (the removal prayer + morning flag).
+───────────────────────────────────────────── */
+
+const DEFECTS_READINESS_QS = [
+  'Have you ever not been genuine in your conversations or prayers with your Higher Power? Do you feel your Higher Power understands and forgives?',
+  "When you're feeling down or stressed, how do you cope? Are these coping methods good for you?",
+  'What steps can you take to be a better version of yourself? Think about easy changes that could make a big difference.',
+  "Which bad habits do you find yourself repeating? Why do you think you keep going back to them even if you know they're not good?",
+  'Are there things you do that hurt you or others? What can you do to stop or change these actions?',
+  'Do you help out in your community? Think of more ways you could contribute. What are some things you can start doing every week?',
+  "Would you say you're an honest person? Have these steps made you more truthful?",
+  'Do you often find yourself wanting what others have? Have these steps taught you to be more thankful for what you have?',
+  'Do you own up to your actions? Has working on these steps made you more responsible?',
+];
+
+const DEFECTS_PHASES = [
+  {key:1, label:'List defects',     short:'List'},
+  {key:2, label:'Life without',     short:'Vision'},
+  {key:3, label:'Removal prayer',   short:'Prayer'},
+];
+
+/** Is a defect "complete" for a given phase? */
+function defectPhaseDone(d, phase){
+  if(phase===1) return !!(d.name && d.name.trim());
+  if(phase===2) return !!(d.withoutVision && d.withoutVision.trim());
+  if(phase===3) return !!(d.prayer && d.prayer.trim());
+  return false;
+}
+
+function DefectsScreen(){
+  const nav=useNav();
+  const {ui}=useUISettings();
+  const {steps, addItem, removeItem} = useSteps();
+  const defects = steps.defects||[];
+  const [phase, setPhase] = useState(1);
+  const [qOpen, setQOpen] = useState(null);   // which readiness question is open
+  const [showQs, setShowQs] = useState(false); // readiness section collapsed by default after first defect
+
+  const doneCount = defects.filter(d=>defectPhaseDone(d,phase)).length;
+  const morningCount = defects.filter(d=>d.inMorningPrayers && d.prayer && d.prayer.trim()).length;
+
+  const phaseHint = phase===1
+    ? 'Here we place the first character defect from our list. Sometimes we perceive these as operating separately, sometimes we see them as pairs or clusters.'
+    : phase===2
+    ? 'Carry each defect forward and picture life without it — who you could be once it is removed.'
+    : applySpiritualLanguage('For each defect, write a prayer asking your Higher Power to remove it. Flag the ones you want to carry into your morning prayers.', ui);
+
+  return (
+    <>
+      <AppBar eyebrow="VII · Steps 6 & 7 · 12 & 12 pg 58" title="Defects & shortcomings"/>
+      <ScreenBody>
+        <section style={{padding:'12px 24px 0'}}>
+          <FirstUseHint id="defects" title="Steps 6 & 7 · Defects & shortcomings">
+            Three phases, each carrying your list forward: (1) name each defect and how life is with it, (2) picture life without it, (3) write a prayer to have it removed. Work them in order, at your own pace — readiness over perfection.
+          </FirstUseHint>
+        </section>
+
+        {/* Phase switcher */}
+        <section style={{padding:'18px 24px 0'}}>
+          <div style={{display:'flex',gap:0,borderBottom:'1px solid var(--rule)'}}>
+            {DEFECTS_PHASES.map(ph=>{
+              const active=phase===ph.key;
+              return (
+                <button key={ph.key} onClick={()=>setPhase(ph.key)}
+                  style={{flex:1,background:'transparent',border:0,cursor:'pointer',padding:'8px 4px 10px',fontFamily:'Newsreader,Georgia,serif',fontSize:14,color:active?'var(--ink)':'var(--muted)',fontStyle:active?'normal':'italic',borderBottom:active?'2px solid var(--terra)':'2px solid transparent',marginBottom:-1}}>
+                  <span style={{display:'block',fontSize:11,color:'var(--terra)',fontVariantNumeric:'oldstyle-nums'}}>{ph.key}</span>
+                  {ph.short}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Phase 3 top quote (12&12 pg 58) — verbatim, never tokenized */}
+        {phase===3 && (
+          <section style={{padding:'18px 24px 0'}}>
+            <Scripture cite="12 & 12, pg 58">"A clear recognition of what and who we really are, followed by a sincere attempt to become what we could be. Therefore, our first practical move toward humility must consist of recognizing our deficiencies. No defect can be corrected unless we clearly see what it is."</Scripture>
+          </section>
+        )}
+
+        <section style={{padding:'18px 24px 0'}}>
+          <p className="serif" style={{fontSize:15,color:'var(--ink-2)',fontStyle:'italic',lineHeight:1.55,textWrap:'pretty',margin:0}}>{phaseHint}</p>
+        </section>
+
+        {/* Phase 1: optional readiness reflection questions */}
+        {phase===1 && (
+          <section style={{padding:'18px 24px 0'}}>
+            <Pressable onClick={()=>setShowQs(v=>!v)} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0'}}>
+              <span className="eyebrow" style={{color:'var(--terra-ink)'}}>Questions for reflection</span>
+              <span className="serif" style={{fontSize:14,color:'var(--muted)'}}>{showQs?'–':'+'}</span>
+            </Pressable>
+            {showQs && (
+              <div style={{marginTop:6}}>
+                <p className="serif" style={{fontSize:13,color:'var(--muted)',fontStyle:'italic',lineHeight:1.5,margin:'0 0 6px'}}>Sit with these before — or while — you name your defects. They are for reflection; you don't have to write answers here.</p>
+                {DEFECTS_READINESS_QS.map((q,i)=>(
+                  <div key={i} style={{display:'flex',gap:10,padding:'8px 0',borderBottom:'1px solid var(--rule-soft)'}}>
+                    <span className="serif" style={{fontSize:12,color:'var(--terra)',fontStyle:'italic',flexShrink:0,fontVariantNumeric:'oldstyle-nums'}}>{i+1}.</span>
+                    <span className="serif" style={{fontSize:14,color:'var(--ink-2)',lineHeight:1.5,textWrap:'pretty'}}>{applySpiritualLanguage(q, ui)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Add a defect (only meaningful in phase 1, but available throughout) */}
+        <section style={{padding:'20px 24px 0'}}>
+          <Pressable onClick={()=>nav.push('defect-add')} style={{display:'flex',alignItems:'center',gap:10,padding:'12px 0'}}>
+            <span className="serif" style={{fontSize:18,color:'var(--terra-ink)'}}>+</span>
+            <span className="serif" style={{fontSize:15,color:'var(--terra-ink)',fontStyle:'italic'}}>add a character defect</span>
+          </Pressable>
+        </section>
+
+        {/* The defect list */}
+        <section style={{padding:'8px 0 0'}}>
+          <div style={{padding:'0 24px 8px'}}>
+            <Eyebrow>Your defects · {doneCount} of {defects.length} {phase===1?'listed':phase===2?'envisioned':'prayed'}{phase===3 && morningCount>0?` · ${morningCount} in morning prayers`:''}</Eyebrow>
+          </div>
+          {defects.length===0 && (
+            <div style={{padding:'8px 24px 0'}}>
+              <p className="serif" style={{fontSize:15,color:'var(--muted)',fontStyle:'italic',lineHeight:1.55}}>No defects yet. Tap "add a character defect" to begin your list.</p>
+            </div>
+          )}
+          {defects.map((d)=>{
+            const phaseText = phase===1 ? (d.withLife||'') : phase===2 ? (d.withoutVision||'') : (d.prayer||'');
+            const done=defectPhaseDone(d,phase);
+            return (
+              <div key={d.id} style={{padding:'14px 24px',borderBottom:'1px solid var(--rule-soft)',display:'flex',alignItems:'flex-start',gap:8,minWidth:0}}>
+                <Pressable onClick={()=>nav.push('defect-edit',{id:d.id})} style={{flex:1,minWidth:0,padding:0,textAlign:'left',display:'block'}}>
+                  <span style={{display:'flex',alignItems:'center',gap:10,minWidth:0}}>
+                    <span aria-hidden="true" style={{flexShrink:0,width:14,height:14,borderRadius:'50%',border:`1.5px solid ${done?'var(--terra-ink)':'var(--muted)'}`,background:done?'var(--terra-ink)':'transparent',display:'inline-flex',alignItems:'center',justifyContent:'center'}}>
+                      {done&&<span style={{color:'var(--paper)',fontSize:9,lineHeight:1}}>✓</span>}
+                    </span>
+                    <span className="serif" style={{flex:1,minWidth:0,fontSize:18,color:'var(--ink)'}}>{d.name||'— unnamed defect —'}</span>
+                    {phase===3 && d.inMorningPrayers && <Stamp style={{flexShrink:0,color:'var(--terra-ink)'}}>morning</Stamp>}
+                  </span>
+                  <span style={{display:'block',paddingLeft:24,marginTop:4}}>
+                    {phaseText
+                      ? <span className="serif" style={{display:'block',fontSize:15,color:'var(--ink-2)',lineHeight:1.5,textWrap:'pretty'}}>{phaseText}</span>
+                      : <span className="serif" style={{display:'block',fontSize:14,color:'var(--faint)',fontStyle:'italic'}}>{phase===1?'— life with this defect not written —':phase===2?'— vision not written —':'— prayer not written —'}</span>}
+                  </span>
+                </Pressable>
+                <Pressable onClick={()=>{ if(confirm(`Remove "${d.name||'this defect'}" and its written work?`)) removeItem('defects', d.id); }} style={{padding:'4px 6px',flexShrink:0,width:'auto'}}>
+                  <span className="serif" style={{fontSize:15,color:'var(--faint)'}}>✕</span>
+                </Pressable>
+              </div>
+            );
+          })}
+        </section>
+
+        <section style={{padding:'28px 24px 40px'}}>
+          <p className="serif" style={{fontSize:14,color:'var(--muted)',fontStyle:'italic',lineHeight:1.6,textWrap:'pretty',margin:0}}>Step 6 asks only for willingness — readiness to have these removed. Step 7 is the asking: the prayer in phase three. Be patient and honest; name even the defects you are not yet ready to release.</p>
+        </section>
+      </ScreenBody>
+    </>
+  );
+}
+
+function DefectEditScreen(){
+  const nav=useNav();
+  const {ui}=useUISettings();
+  const {steps, addItem, updateItem, removeItem} = useSteps();
+  const existing = nav.params&&nav.params.id ? (steps.defects||[]).find(d=>d.id===nav.params.id) : null;
+  const isEdit = !!existing;
+
+  const [name,setName]=useState(existing?existing.name||'':'');
+  const [withLife,setWithLife]=useState(existing?existing.withLife||'':'');
+  const [withoutVision,setWithoutVision]=useState(existing?existing.withoutVision||'':'');
+  const [prayer,setPrayer]=useState(existing?existing.prayer||'':'');
+  const [inMorningPrayers,setInMorning]=useState(existing?!!existing.inMorningPrayers:false);
+
+  const save=()=>{
+    if(!name.trim()){ alert('Give the defect a name before saving.'); return; }
+    const data={name:name.trim(), withLife:withLife.trim(), withoutVision:withoutVision.trim(), prayer:prayer.trim(), inMorningPrayers};
+    if(isEdit) updateItem('defects', existing.id, data);
+    else addItem('defects', data);
+    nav.back();
+  };
+
+  const hp = resolveHigherPower(ui);
+
+  return (
+    <>
+      <AppBar eyebrow={isEdit?'Edit defect':'New defect'} title="A character defect" right={<ButtonText onClick={save}>save →</ButtonText>}/>
+      <ScreenBody>
+        {/* Phase 1 */}
+        <section style={{padding:'12px 24px 0'}}>
+          <Eyebrow style={{marginBottom:8}}>Phase 1 · The defect</Eyebrow>
+          <SerifInput value={name} onChange={setName} autoFocus placeholder="e.g. Pride, Fear, Dishonesty, Self-pity…"/>
+          <div style={{marginTop:22}}>
+            <Eyebrow style={{marginBottom:6}}>Life with this defect</Eyebrow>
+            <SerifTextarea value={withLife} onChange={setWithLife} minRows={2} placeholder="How does this show up? What has it cost me?"/>
+          </div>
+        </section>
+        <Hairline style={{margin:'26px 24px 0'}}/>
+        {/* Phase 2 */}
+        <section style={{padding:'24px 24px 0'}}>
+          <Eyebrow style={{marginBottom:6}}>Phase 2 · Life without it</Eyebrow>
+          <p className="serif" style={{fontSize:13,color:'var(--muted)',fontStyle:'italic',lineHeight:1.5,margin:'0 0 8px'}}>Picture who you could be once this is removed.</p>
+          <SerifTextarea value={withoutVision} onChange={setWithoutVision} minRows={2} placeholder="A vision for life without this defect…"/>
+        </section>
+        <Hairline style={{margin:'26px 24px 0'}}/>
+        {/* Phase 3 */}
+        <section style={{padding:'24px 24px 0'}}>
+          <Eyebrow style={{marginBottom:6}}>Phase 3 · Removal prayer</Eyebrow>
+          <p className="serif" style={{fontSize:13,color:'var(--muted)',fontStyle:'italic',lineHeight:1.5,margin:'0 0 8px'}}>{applySpiritualLanguage('A prayer asking your Higher Power to remove this defect.', ui)}</p>
+          <SerifTextarea value={prayer} onChange={setPrayer} minRows={3} placeholder={hp+', I humbly ask you to remove my '+(name.trim()? name.trim().toLowerCase():'defect')+'…'}/>
+          <Pressable onClick={()=>setInMorning(v=>!v)} style={{display:'flex',alignItems:'center',gap:14,padding:'18px 0 0'}}>
+            <div style={{flex:1,minWidth:0}}>
+              <div className="serif" style={{fontSize:16,color:inMorningPrayers?'var(--ink)':'var(--muted)'}}>Include in my morning prayers</div>
+              <Stamp style={{marginTop:2,display:'block'}}>Adds this removal prayer to the morning practice list.</Stamp>
+            </div>
+            <SwitchInk on={inMorningPrayers} onToggle={()=>setInMorning(v=>!v)}/>
+          </Pressable>
+        </section>
+
+        {isEdit && (
+          <section style={{padding:'28px 24px 40px'}}>
+            <Pressable onClick={()=>{ if(confirm(`Remove "${existing.name}" and its written work?`)){ removeItem('defects', existing.id); nav.back(); } }} style={{padding:'12px 0'}}>
+              <span className="serif" style={{fontSize:15,color:'var(--muted)',fontStyle:'italic'}}>Remove this defect</span>
+            </Pressable>
+          </section>
+        )}
+      </ScreenBody>
+    </>
+  );
+}
+
 function StepsRouter(){
   const nav=useNav();
   switch(nav.current){
@@ -3354,6 +3898,9 @@ function StepsRouter(){
     case 'sex-edit':       return <SexEditScreen/>;
     case 'fault-add':      return <FaultAddScreen/>;
     case 'eighth':         return <AmendsScreen/>;
+    case 'defects':        return <DefectsScreen/>;
+    case 'defect-add':     return <DefectEditScreen/>;
+    case 'defect-edit':    return <DefectEditScreen/>;
     case 'amend-add':      return <AmendEditScreen/>;
     case 'amend-edit':     return <AmendEditScreen/>;
     default:               return <StubScreen section={STEP_SECTIONS.find(s=>s.id===nav.current)||STEP_SECTIONS[0]}/>;
@@ -3890,7 +4437,17 @@ function PeopleListScreen(){
       <AppBar eyebrow="Fellowship" title="People" right={<ButtonText onClick={()=>nav.push('add')}>+ add</ButtonText>}/>
       <ScreenBody>
         <section style={{padding:'4px 24px 0'}}>
-          <NoteBox>Stored on this device only. Numbers are blurred until you tap.</NoteBox>
+          <NoteBox>Stored on this device only. Phone and email stay blurred until you tap.</NoteBox>
+        </section>
+        <section style={{padding:'14px 24px 0'}}>
+          <Pressable onClick={()=>nav.push('importReview')} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',border:'1px solid var(--rule)',borderRadius:10}}>
+            <span className="serif" style={{fontSize:18,color:'var(--terra-ink)'}}>↓</span>
+            <div style={{flex:1,minWidth:0}}>
+              <div className="serif" style={{fontSize:16,color:'var(--ink)'}}>Import a sponsee's review</div>
+              <Stamp style={{marginTop:2,display:'block'}}>Load an encrypted file + key</Stamp>
+            </div>
+            <span className="serif" style={{color:'var(--muted)'}}>›</span>
+          </Pressable>
         </section>
         <section style={{padding:'20px 24px 0'}}>
           <SerifInput value={query} onChange={setQuery} placeholder="Search by name or initials…"/>
@@ -3939,6 +4496,9 @@ function ContactDetailScreen(){
   const {contacts, updateContact}=useContacts();
   const c=contacts.find(x=>x.id===(nav.params&&nav.params.id));
   const [revealed,setRevealed]=useState(false);
+  const [reviews,setReviews]=useState(()=>{ const all=loadSponseeReviews(); const id=(nav.params&&nav.params.id); return id?(all[id]||[]):[]; });
+  const refreshReviews=()=>{ const all=loadSponseeReviews(); setReviews(c?(all[c.id]||[]):[]); };
+  const deleteReview=(rid)=>{ if(!c)return; if(confirm('Delete this shared work now? This cannot be undone.')){ removeSponseeReview(c.id,rid); refreshReviews(); } };
   if(!c) return (
     <>
       <AppBar eyebrow="Contact" title="Not found"/>
@@ -3986,14 +4546,17 @@ function ContactDetailScreen(){
             </div>
             {c.phone && <Stamp style={{color:'var(--terra-ink)'}}>{revealed?'hide':'reveal'}</Stamp>}
           </Pressable>
-          <div style={{padding:'14px 0',borderBottom:'1px solid var(--rule-soft)'}}>
-            <Stamp>Email</Stamp>
-            <div style={{marginTop:2}}>
-              {c.email
-                ? <span className="serif" style={{fontSize:18,color:'var(--ink)'}}>{c.email}</span>
-                : <span className="serif" style={{fontSize:18,color:'var(--muted)',fontStyle:'italic'}}>— not set —</span>}
+          <Pressable onClick={()=>setRevealed(r=>!r)} style={{display:'flex',alignItems:'center',gap:14,padding:'14px 0',borderBottom:'1px solid var(--rule-soft)'}}>
+            <div style={{flex:1,minWidth:0}}>
+              <Stamp>Email</Stamp>
+              <div style={{marginTop:2}}>
+                {c.email
+                  ? <span className="serif" style={{fontSize:18,color:'var(--ink)',filter:revealed?'none':'blur(6px)',transition:'filter 0.2s',overflowWrap:'anywhere'}}>{c.email}</span>
+                  : <span className="serif" style={{fontSize:18,color:'var(--muted)',fontStyle:'italic'}}>— not set —</span>}
+              </div>
             </div>
-          </div>
+            {c.email && <Stamp style={{color:'var(--terra-ink)'}}>{revealed?'hide':'reveal'}</Stamp>}
+          </Pressable>
           {c.howWeMet && (
             <div style={{padding:'14px 0'}}>
               <Stamp>How we met</Stamp>
@@ -4011,6 +4574,30 @@ function ContactDetailScreen(){
               </div>
               <ButtonText style={{padding:0,color:'var(--terra-ink)'}}>manage →</ButtonText>
             </Pressable>
+          </section>
+        )}
+        {c.role==='Sponsee'&&(
+          <section style={{padding:'28px 24px 0'}}>
+            <Eyebrow style={{marginBottom:12}}>Shared work</Eyebrow>
+            {reviews.length===0 ? (
+              <p className="serif" style={{fontSize:15,color:'var(--muted)',fontStyle:'italic',marginTop:0}}>Nothing shared yet. When {c.name} sends you their step work, import it from the People list and it appears here.</p>
+            ) : reviews.map(r=>{
+              const left=reviewDaysLeft(r);
+              return (
+                <div key={r.reviewId} style={{padding:'14px 16px',border:'1px solid var(--rule)',borderRadius:10,marginBottom:12,background:'var(--paper-deep)'}}>
+                  <Pressable onClick={()=>nav.push('review',{contactId:c.id, reviewId:r.reviewId})} style={{display:'flex',alignItems:'center',gap:12}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div className="serif" style={{fontSize:16,color:'var(--ink)'}}>{(r.steps||[]).length} section{(r.steps||[]).length===1?'':'s'} · {new Date(r.importedAt).toLocaleDateString()}</div>
+                      <Stamp style={{marginTop:2,display:'block',color:left<=3?'var(--terra-ink)':'var(--muted)'}}>{left>0?`auto-deletes in ${left} day${left===1?'':'s'}`:'expired'}{r.sentBackAt?' · feedback sent':''}</Stamp>
+                    </div>
+                    <span className="serif" style={{color:'var(--terra-ink)'}}>open →</span>
+                  </Pressable>
+                  <Pressable onClick={()=>deleteReview(r.reviewId)} style={{marginTop:8,paddingTop:8,borderTop:'1px solid var(--rule-soft)'}}>
+                    <Stamp style={{color:'var(--muted)'}}>delete now</Stamp>
+                  </Pressable>
+                </div>
+              );
+            })}
           </section>
         )}
         <section style={{padding:'28px 24px 36px'}}>
@@ -4129,12 +4716,245 @@ function ContactEditScreen(){
   );
 }
 
+/* ── F6 SPONSOR IMPORT + REVIEW ─────────────────────────────────────
+   Sponsor loads an encrypted box + key, it's filed under the matching
+   sponsee contact, then read with per-section comments and sent back. */
+
+function pickFileText(){
+  return new Promise((resolve)=>{
+    const inp=document.createElement('input');
+    inp.type='file'; inp.accept='.json,application/json';
+    let settled=false;
+    const finish=(v)=>{ if(!settled){ settled=true; resolve(v); } };
+    inp.onchange=()=>{ const f=inp.files&&inp.files[0]; if(!f){finish(null);return;}
+      const fr=new FileReader(); fr.onload=()=>finish(fr.result); fr.onerror=()=>finish(null); fr.readAsText(f); };
+    inp.addEventListener('cancel', ()=>finish(null)); // fired by modern browsers when the dialog is dismissed
+    inp.click();
+  });
+}
+
+/* A friendly, human label for a section id. */
+function sectionLabel(id){
+  const s=SHARE_STEP_SECTIONS.find(x=>x.id===id); return s?s.label:id;
+}
+
+/* ── Sponsor-view rendering of shared work (F6.2) ──
+   Internal record ids (id, causeId, resentmentId, …) are never shown.
+   Answers are rendered under their actual question text (reusing the same
+   question constants the worksheets use) so the sponsor reads in context. */
+const SHARE_QUESTION_SETS = {
+  faults: FAULTS_GROUPS.flatMap(g=>g.questions),
+  fear2: FEAR2_QUESTIONS,
+  sexRelations: SEX_QUESTIONS,
+};
+const SHARE_FIELD_LABELS = {
+  cause:'The cause', harms:'The harm done', direct:'Direct amends',
+  type:'Type', category:'Category', categories:'Fear categories',
+  withLife:'Life with this defect', withoutVision:'Life without it', prayer:'Prayer',
+};
+const SHARE_SKIP_KEY = (k)=> k==='id' || /Id$/.test(k);
+
+/* One record (one resentment, one amends row, …) as labeled question/answer rows. */
+function ShareRecord({secId, rec}){
+  const qs = SHARE_QUESTION_SETS[secId]||[];
+  const qKeys = new Set(qs.map(q=>q.key));
+  const rows=[];
+  qs.forEach(q=>{ const v=rec[q.key]; if(typeof v==='string'&&v.trim()) rows.push({label:q.q, val:v}); });
+  Object.entries(rec).forEach(([k,v])=>{
+    if(SHARE_SKIP_KEY(k)||k==='name'||qKeys.has(k)) return;
+    if(Array.isArray(v)&&v.length&&v.every(x=>typeof x==='string')) rows.push({label:SHARE_FIELD_LABELS[k]||k, val:v.join(' · ')});
+    else if(typeof v==='string'&&v.trim()) rows.push({label:SHARE_FIELD_LABELS[k]||null, val:v});
+  });
+  const status = secId==='amends' ? (rec.complete?'amends made ✓':(rec.living?'living amends':null)) : null;
+  const title = (typeof rec.name==='string'&&rec.name.trim()) ? rec.name : null;
+  return (
+    <div style={{padding:'12px 0',borderBottom:'1px solid var(--rule-soft)'}}>
+      {title&&(
+        <div style={{display:'flex',alignItems:'baseline',gap:10}}>
+          <div className="serif" style={{fontSize:17,color:'var(--ink)',flex:1,minWidth:0}}>{title}</div>
+          {status&&<Stamp style={{color:'var(--terra-ink)'}}>{status}</Stamp>}
+        </div>
+      )}
+      {rows.length===0 && !title && <p className="serif" style={{fontSize:15,color:'var(--muted)',fontStyle:'italic',margin:0}}>—</p>}
+      {rows.map((r,i)=>(
+        <div key={i} style={{marginTop:i===0&&!title?0:8}}>
+          {r.label&&<Stamp>{r.label}</Stamp>}
+          <p className="serif" style={{fontSize:16,color:'var(--ink)',lineHeight:1.5,margin:'2px 0 0',textWrap:'pretty'}}>{r.val}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ReviewSectionBlock({secId, data, comment, onComment}){
+  const rows=[];
+  if(Array.isArray(data)){
+    data.forEach((rec,i)=>rows.push(<ShareRecord key={i} secId={secId} rec={rec}/>));
+  }else if(data&&typeof data==='object'){
+    // fear2: { categoryName: {q1..q9} } — one block per category, questions repeated.
+    Object.entries(data).forEach(([cat,answers])=>{
+      const inner=[];
+      if(answers&&typeof answers==='object'){
+        FEAR2_QUESTIONS.forEach(q=>{
+          const v=answers[q.key];
+          if(typeof v==='string'&&v.trim()) inner.push(
+            <div key={q.key} style={{marginTop:8}}>
+              <Stamp>{q.q}</Stamp>
+              <p className="serif" style={{fontSize:16,color:'var(--ink)',lineHeight:1.5,margin:'2px 0 0',textWrap:'pretty'}}>{v}</p>
+            </div>
+          );
+        });
+      }
+      rows.push(
+        <div key={cat} style={{padding:'12px 0',borderBottom:'1px solid var(--rule-soft)'}}>
+          <div className="serif" style={{fontSize:17,color:'var(--ink)'}}>{cat}</div>
+          {inner.length?inner:<p className="serif" style={{fontSize:15,color:'var(--muted)',fontStyle:'italic',margin:'4px 0 0'}}>No answers yet.</p>}
+        </div>
+      );
+    });
+  }
+  return (
+    <section style={{padding:'22px 24px 0'}}>
+      <h3 className="serif" style={{fontSize:20,fontWeight:400,marginBottom:8}}>{sectionLabel(secId)}</h3>
+      {rows.length?rows:<p className="serif" style={{fontSize:15,color:'var(--muted)',fontStyle:'italic'}}>No entries.</p>}
+      <div style={{marginTop:12}}>
+        <Eyebrow style={{marginBottom:6}}>Your note on this section</Eyebrow>
+        <SerifTextarea value={comment||''} onChange={onComment} minRows={2} placeholder="Feedback for this section…"/>
+      </div>
+    </section>
+  );
+}
+
+function SponseeReviewScreen(){
+  const nav=useNav();
+  const {contacts}=useContacts();
+  const profile=useProfile();
+  const {contactId, reviewId}=nav.params||{};
+  const contact=contacts.find(c=>c.id===contactId);
+  const [review,setReview]=useState(()=>{
+    const all=loadSponseeReviews(); return (all[contactId]||[]).find(r=>r.reviewId===reviewId)||null;
+  });
+  const [sent,setSent]=useState(()=>{
+    const p=loadPendingShare();
+    return (p && isFeedbackLabel(p.label) && p.reviewId===reviewId) ? {blob:p.blob, key:p.key} : null;
+  });
+  if(!review) return (<><AppBar eyebrow="Review" title="Not found"/><ScreenBody><section style={{padding:24}}><p className="serif" style={{color:'var(--muted)',fontStyle:'italic'}}>This shared work is no longer available — it may have reached its expiry date.</p></section></ScreenBody></>);
+  const left=reviewDaysLeft(review);
+  const setComment=(secId,val)=>{
+    const next={...review, comments:{...review.comments,[secId]:val}};
+    setReview(next); updateSponseeReview(contactId, reviewId, {comments:next.comments});
+  };
+  const sendBack=async ()=>{
+    try{
+      const inner=packageReplyForSponsee(review, (profile&&profile.name)||'Your sponsor');
+      const r=await buildSharePackage(inner);
+      savePendingShare({blob:r.blob, key:r.key, label:'review-thoughts', contactId, reviewId});
+      updateSponseeReview(contactId, reviewId, {sentBackAt:new Date().toISOString()});
+      setSent(r);
+    }catch(e){ alert(e.message||'Could not prepare the reply.'); }
+  };
+  if(sent) return (<><AppBar eyebrow="Send back" title="Feedback ready"/><ScreenBody><ShareResultView result={sent} sponsorName={contact?contact.name:'them'} label="review-thoughts" onDone={()=>nav.back()}/></ScreenBody></>);
+  return (
+    <>
+      <AppBar eyebrow={contact?`from ${contact.name}`:'review'} title="Shared work"/>
+      <ScreenBody>
+        <section style={{padding:'4px 24px 0'}}>
+          <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderRadius:10,background:left<=3?'var(--terra-soft)':'var(--paper-deep)',border:'1px solid var(--rule)'}}>
+            <span style={{width:6,height:6,borderRadius:'50%',background:left<=3?'var(--terra)':'var(--muted)'}}/>
+            <Stamp style={{color:left<=3?'var(--terra-ink)':'var(--muted)'}}>{left>0?`auto-deletes in ${left} day${left===1?'':'s'}`:'expired'}</Stamp>
+          </div>
+        </section>
+        {(review.steps||[]).map(secId=>(
+          <ReviewSectionBlock key={secId} secId={secId} data={review.payload&&review.payload[secId]}
+            comment={review.comments&&review.comments[secId]} onComment={(v)=>setComment(secId,v)}/>
+        ))}
+        <section style={{padding:'28px 24px 36px'}}>
+          <ButtonSerif primary onClick={sendBack} style={{width:'100%'}}>Send feedback back to {contact?contact.name:'them'}</ButtonSerif>
+          <Stamp style={{marginTop:10,display:'block',textAlign:'center'}}>Encrypted the same way — file + a one-time key</Stamp>
+        </section>
+      </ScreenBody>
+    </>
+  );
+}
+
+function SponsorImportScreen(){
+  const nav=useNav();
+  const {contacts, addContact}=useContacts();
+  const sponsees=contacts.filter(c=>c.role==='Sponsee');
+  const [stage,setStage]=useState('load');  // load → key → match
+  const [blob,setBlob]=useState(null);
+  const [keyInput,setKeyInput]=useState('');
+  const [inner,setInner]=useState(null);
+  const [err,setErr]=useState('');
+
+  const loadFile=async ()=>{
+    setErr(''); const txt=await pickFileText();
+    if(!txt){ return; }
+    try{ const b=JSON.parse(txt);
+      if(b.kind!=='sponsor-share') throw new Error('That file is not a step-work share.');
+      setBlob(b); setStage('key');
+    }catch(e){ setErr('Could not read that file. Make sure it is the .swshare.json file.'); }
+  };
+  const tryUnlock=async ()=>{
+    setErr('');
+    try{ const got=await openSharePackage(blob, keyInput); setInner(got); setStage('match'); }
+    catch(e){ setErr(e.message||'Wrong key.'); }
+  };
+  const fileUnder=(cid)=>{ addSponseeReview(cid, inner); nav.replace?nav.replace('detail',{id:cid}):nav.goto('people','detail',{id:cid}); };
+  const createAndFile=()=>{
+    const id=addContact({name:inner.fromName||'New sponsee', role:'Sponsee'});
+    addSponseeReview(id, inner);
+    nav.goto('people','detail',{id});
+  };
+
+  return (
+    <>
+      <AppBar eyebrow="Sponsor" title="Import review"/>
+      <ScreenBody>
+        {stage==='load'&&(
+          <section style={{padding:'4px 24px 0'}}>
+            <NoteBox>Load the encrypted file your sponsee sent, then enter (or scan) the one-time key they gave you separately.</NoteBox>
+            <ButtonSerif primary onClick={loadFile} style={{width:'100%',marginTop:20}}>Choose the shared file</ButtonSerif>
+            {err&&<Stamp style={{marginTop:12,display:'block',color:'var(--terra-ink)'}}>{err}</Stamp>}
+          </section>
+        )}
+        {stage==='key'&&(
+          <section style={{padding:'4px 24px 0'}}>
+            <Eyebrow style={{marginBottom:8}}>One-time key</Eyebrow>
+            <SerifInput value={keyInput} onChange={setKeyInput} autoFocus placeholder="e.g. ABCDE-FGHJK"/>
+            <p className="serif" style={{fontSize:14,color:'var(--muted)',fontStyle:'italic',marginTop:10,lineHeight:1.5}}>Read it from the QR code or however they shared it. Dashes and case don't matter.</p>
+            <ButtonSerif primary onClick={tryUnlock} style={{width:'100%',marginTop:18}}>Unlock</ButtonSerif>
+            {err&&<Stamp style={{marginTop:12,display:'block',color:'var(--terra-ink)'}}>{err}</Stamp>}
+          </section>
+        )}
+        {stage==='match'&&inner&&(
+          <section style={{padding:'4px 24px 0'}}>
+            <NoteBox>Unlocked. Who is this from? It'll be filed privately under that person.</NoteBox>
+            <Eyebrow style={{margin:'22px 0 8px'}}>Your sponsees</Eyebrow>
+            {sponsees.length===0 && <p className="serif" style={{fontSize:15,color:'var(--muted)',fontStyle:'italic'}}>No sponsees yet.</p>}
+            {sponsees.map(c=>(
+              <Pressable key={c.id} onClick={()=>fileUnder(c.id)} style={{display:'flex',alignItems:'center',gap:14,padding:'14px 0',borderBottom:'1px solid var(--rule-soft)'}}>
+                <InitialAvatar name={c.name} size={40}/>
+                <div className="serif" style={{flex:1,fontSize:18}}>{c.name}</div>
+                <span className="serif" style={{color:'var(--terra-ink)'}}>file here →</span>
+              </Pressable>
+            ))}
+            <ButtonSerif onClick={createAndFile} style={{width:'100%',marginTop:22}}>New sponsee{inner.fromName?` "${inner.fromName}"`:''}</ButtonSerif>
+          </section>
+        )}
+      </ScreenBody>
+    </>
+  );
+}
+
 function PeopleRouter(){
   const nav=useNav();
   switch(nav.current){
     case 'detail': return <ContactDetailScreen/>;
     case 'edit':   return <ContactEditScreen/>;
     case 'add':    return <ContactAddScreen/>;
+    case 'importReview': return <SponsorImportScreen/>;
+    case 'review':       return <SponseeReviewScreen/>;
     default:       return <PeopleListScreen/>;
   }
 }
@@ -4154,121 +4974,332 @@ function SwitchRow({label,time,initialOn}){
   );
 }
 
-function SponsorModeView({shared}){
-  const [sponsorNote,setSponsorNote]=useState('');
-  const {name:displayName, soberDays}=useProfile();
+/* ── F6 SHARE FLOW UI ──────────────────────────────────────────────
+   Real, encrypted sponsor sharing. Replaces the old SAMPLE-data mockup.
+   The sponsee picks sections, the app builds an encrypted box + one-time
+   key, and offers two handoff paths: in-person (QR of the key) and remote
+   (save the box file, reveal the key separately). ─────────────────────── */
+
+/* Save the encrypted box. Desktop Chrome/Edge: a real "Save as" dialog so the
+   user picks (and knows) the location. Mobile: the system share sheet. Fallback:
+   a plain download to the Downloads folder. Always awaited - the UI only says
+   "saved" when the save actually happened. Returns {ok, how, name}. */
+async function saveShareFile(blob, label){
+  const json = JSON.stringify(blob);
+  const ts=new Date();
+  const stamp=`${ts.getFullYear()}${String(ts.getMonth()+1).padStart(2,'0')}${String(ts.getDate()).padStart(2,'0')}-${String(ts.getHours()).padStart(2,'0')}${String(ts.getMinutes()).padStart(2,'0')}`;
+  const filename=`${label}-${stamp}.swshare.json`;
+  const bytes = new Blob([json], {type:'application/json'});
+
+  // 1) Chromium desktop: explicit Save-as dialog (user sees exactly where it goes).
+  if(window.showSaveFilePicker){
+    try{
+      const handle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        types:[{description:'Encrypted step-work share', accept:{'application/json':['.json']}}],
+      });
+      const w = await handle.createWritable();
+      await w.write(bytes); await w.close();
+      return {ok:true, how:'saved', name:handle.name||filename};
+    }catch(e){
+      if(e && e.name==='AbortError') return {ok:false, how:'cancelled', name:filename};
+      /* any other failure: fall through to a plain download */
+    }
+  }
+
+  // 2) Mobile only: system share sheet - awaited, never assumed to succeed.
+  const file = new File([bytes], filename, {type:'application/json'});
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if(isMobile && navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({files:[file], title:'Step work (encrypted)'});
+      return {ok:true, how:'shared', name:filename};
+    }catch(e){
+      if(e && e.name==='AbortError') return {ok:false, how:'cancelled', name:filename};
+      /* fall through to a plain download */
+    }
+  }
+
+  // 3) Fallback: classic download into the browser's Downloads folder.
+  const url=URL.createObjectURL(bytes);
+  const a=document.createElement('a'); a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  return {ok:true, how:'downloaded', name:filename};
+}
+
+/* Draw a QR for `text` into `el` as a grid of divs (no canvas — crisp at any size). */
+function renderShareQR(el, text){
+  if(typeof window.qrcode!=='function'){ el.textContent=''; return; }
+  const qr=window.qrcode(0,'M'); qr.addData(text); qr.make();
+  const n=qr.getModuleCount(); const px=Math.max(3, Math.floor(180/n));
+  let html='<div style="display:inline-grid;grid-template-columns:repeat('+n+','+px+'px);grid-template-rows:repeat('+n+','+px+'px);">';
+  for(let r=0;r<n;r++){ for(let c=0;c<n;c++){ html+='<div style="width:'+px+'px;height:'+px+'px;background:'+(qr.isDark(r,c)?'#1a1a1a':'#fff')+';"></div>'; } }
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+/* Renders the share key as a QR (if the generator is loaded) plus the readable code. */
+function ShareKeyCode({shareKey}){
+  const ref = React.useRef(null);
+  useEffect(()=>{
+    if(ref.current && typeof renderShareQR==='function'){
+      try{ renderShareQR(ref.current, 'SWKEY:'+shareKey); }catch(e){}
+    }
+  },[shareKey]);
   return (
-    <div style={{padding:'0 0 32px'}}>
-      <div style={{background:'var(--paper-deep)',padding:'14px 24px',borderTop:'1px solid var(--rule)',borderBottom:'1px solid var(--rule)',display:'flex',alignItems:'center',gap:12}}>
-        <span style={{width:6,height:6,borderRadius:'50%',background:'var(--terra)'}}/>
-        <Stamp style={{color:'var(--terra-ink)'}}>Sponsor view · read-only</Stamp>
-      </div>
-      <section style={{padding:'22px 24px 0'}}>
-        <Eyebrow>From {displayName}</Eyebrow>
-        <h2 className="serif" style={{fontSize:24,fontWeight:400,marginTop:4,letterSpacing:'-0.01em'}}>Step 4 — Inventory</h2>
-        <Stamp style={{marginTop:4,display:'block'}}>{soberDays>0?`day ${soberDays} · `:''}{shared.size} of {STEP_SECTIONS.length} sections shared</Stamp>
+    <div style={{textAlign:'center'}}>
+      <div ref={ref} style={{display:'inline-block',background:'#fff',padding:12,borderRadius:12,border:'1px solid var(--rule)',minHeight:40}}/>
+      <div className="serif" style={{marginTop:14,fontSize:26,letterSpacing:'0.08em',color:'var(--ink)',fontVariantNumeric:'tabular-nums'}}>{shareKey}</div>
+      <Stamp style={{marginTop:6,display:'block'}}>the one-time key</Stamp>
+    </div>
+  );
+}
+
+function ShareResultView({result, sponsorName, onDone, label='for-review'}){
+  const [saveMsg,setSaveMsg]=useState('');
+  const [revealed,setRevealed]=useState(false);
+  const confirmDone=()=>{
+    if(confirm('All set? Finishing wipes the one-time key from this device for good. Make sure the file is saved AND the key has been scanned or sent. Finish now?')){ clearPendingShare(); onDone(); }
+  };
+  const doSave=async ()=>{
+    const r=await saveShareFile(result.blob, label);
+    if(r.ok && r.how==='saved')           setSaveMsg(`Saved as ${r.name}`);
+    else if(r.ok && r.how==='shared')     setSaveMsg('Handed to the share sheet.');
+    else if(r.ok && r.how==='downloaded') setSaveMsg(`Downloaded to your Downloads folder as ${r.name}`);
+    else                                  setSaveMsg('Not saved - the dialog was closed before finishing.');
+  };
+  return (
+    <div style={{padding:'4px 0 32px'}}>
+      <section style={{padding:'0 24px'}}>
+        <NoteBox>Send the <b>file</b> and the <b>key</b> by different routes. Anyone who gets only one of them can read nothing. Nothing is stored online. You can safely leave the app to send the file — this screen and key will be here when you come back. Tap Done only when {sponsorName} has both.</NoteBox>
       </section>
-      <Hairline style={{margin:'24px 24px 0'}}/>
+
       <section style={{padding:'24px 24px 0'}}>
-        <div style={{display:'flex',alignItems:'baseline',gap:12,marginBottom:12}}>
-          <span className="serif" style={{fontSize:12,color:'var(--terra)',fontStyle:'italic',fontVariantNumeric:'oldstyle-nums',width:18}}>I.</span>
-          <h3 className="serif" style={{fontSize:20,fontWeight:400,flex:1}}>Resentment list</h3>
-          <Stamp>14 names</Stamp>
-        </div>
-        <p className="serif" style={{fontSize:16,lineHeight:1.65,color:'var(--ink)',fontStyle:'italic',textWrap:'pretty',margin:0}}>R. (brother), M., Dad, Old boss — Kent, the church, Money, Myself, Mrs. K., Sara, IRS, Speed limits, the court, Pete, Marcus.</p>
+        <Eyebrow style={{marginBottom:12}}>In person</Eyebrow>
+        <p className="serif" style={{fontSize:15,color:'var(--ink-2)',lineHeight:1.5,marginTop:0}}>Have {sponsorName} scan this key, then hand off the file below.</p>
+        <ShareKeyCode shareKey={result.key}/>
       </section>
-      <Hairline style={{margin:'32px 24px 0'}}/>
+
+      <Hairline style={{margin:'28px 24px 0'}}/>
+
       <section style={{padding:'24px 24px 0'}}>
-        <div style={{display:'flex',alignItems:'baseline',gap:12,marginBottom:12}}>
-          <span className="serif" style={{fontSize:12,color:'var(--terra)',fontStyle:'italic',fontVariantNumeric:'oldstyle-nums',width:18}}>II.</span>
-          <h3 className="serif" style={{fontSize:20,fontWeight:400,flex:1}}>Causes & affects</h3>
-          <Stamp>6 of 14 worked</Stamp>
-        </div>
-        {SAMPLE.causes.slice(0,4).map(c=>(
-          <div key={c.id} style={{padding:'14px 0',borderBottom:'1px solid var(--rule-soft)'}}>
-            <Stamp>{c.name}</Stamp>
-            <p className="serif" style={{fontSize:16,color:'var(--ink)',lineHeight:1.4,marginTop:4,marginBottom:8,textWrap:'pretty'}}>"{c.cause}"</p>
-            <div>
-              {INSTINCTS.filter(ins=>c[ins.key]).map((ins,k,arr)=>(
-                <Fragment key={ins.key}>
-                  <span className="serif" style={{fontSize:13,fontStyle:'italic',color:'var(--terra-ink)'}}>{ins.short}</span>
-                  {k<arr.length-1&&<span style={{margin:'0 8px',color:'var(--rule)'}}>·</span>}
-                </Fragment>
-              ))}
-            </div>
+        <Eyebrow style={{marginBottom:12}}>Remote</Eyebrow>
+        <p className="serif" style={{fontSize:15,color:'var(--ink-2)',lineHeight:1.5,marginTop:0}}>Send the encrypted file however you like (email, text). Then share the key separately — read it aloud on a call, or send it on a different app.</p>
+        <ButtonSerif primary onClick={doSave} style={{width:'100%',marginTop:8}}>Save / send the encrypted file</ButtonSerif>
+        {saveMsg && <Stamp style={{marginTop:10,display:'block'}}>{saveMsg}</Stamp>}
+        <Pressable onClick={()=>setRevealed(r=>!r)} style={{marginTop:18,padding:'12px 0',borderTop:'1px solid var(--rule-soft)',display:'flex',alignItems:'center',gap:12}}>
+          <div style={{flex:1}}>
+            <Stamp>Key to send separately</Stamp>
+            <div className="serif" style={{fontSize:20,letterSpacing:'0.06em',marginTop:2,filter:revealed?'none':'blur(6px)',transition:'filter .2s'}}>{result.key}</div>
           </div>
-        ))}
+          <Stamp style={{color:'var(--terra-ink)'}}>{revealed?'hide':'reveal'}</Stamp>
+        </Pressable>
       </section>
-      <Hairline style={{margin:'24px 24px 0'}}/>
-      <section style={{padding:'24px 24px 0'}}>
-        <Eyebrow style={{marginBottom:10}}>Sponsor note</Eyebrow>
-        <SerifTextarea value={sponsorNote} onChange={setSponsorNote} minRows={3} placeholder={`Notes for ${displayName} on this work…`}/>
-        <div style={{display:'flex',gap:12,marginTop:16,alignItems:'center'}}>
-          <ButtonSerif primary>Send to {displayName}</ButtonSerif>
-          <Stamp>only {displayName} sees these</Stamp>
-        </div>
+
+      <section style={{padding:'32px 24px 0'}}>
+        <ButtonSerif onClick={confirmDone} style={{width:'100%'}}>Done</ButtonSerif>
       </section>
     </div>
   );
 }
 
-function SponsorScreen(){
-  const [shared,setShared]=useState(new Set(SAMPLE.sharedWithSponsor));
-  const [sponsorMode,setSponsorMode]=useState(false);
-  const {sponsor}=useContacts();
-  const sponsorName=sponsor?sponsor.name:'your sponsor';
-  const sponsorInitial=sponsor?profileInitial(sponsor.name):'·';
-  const toggle=(id)=>setShared(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n;});
+/* The sponsor's notes, section by section — used on first unlock AND in the
+   saved-notes screen, so both always present identically. */
+function FeedbackNotesView({inner}){
   return (
     <>
-      <AppBar eyebrow="Sponsor" title={`Share with ${sponsorName}`}
-        right={<Pressable onClick={()=>setSponsorMode(m=>!m)} style={{padding:'6px 0'}}>
-          <Stamp style={{color:sponsorMode?'var(--terra-ink)':'var(--muted)'}}>{sponsorMode?'sponsor view':'preview'}</Stamp>
-        </Pressable>}
-      />
+      {(inner.steps||[]).map(secId=>{
+        const note=inner.comments&&inner.comments[secId];
+        return (
+          <section key={secId} style={{padding:'22px 24px 0'}}>
+            <h3 className="serif" style={{fontSize:20,fontWeight:400,marginBottom:8}}>{sectionLabel(secId)}</h3>
+            {note ? (
+              <div style={{padding:'12px 16px',borderLeft:'3px solid var(--terra)',background:'var(--terra-soft)',borderRadius:'0 8px 8px 0'}}>
+                <Stamp style={{color:'var(--terra-ink)'}}>Sponsor's note</Stamp>
+                <p className="serif" style={{fontSize:16,color:'var(--ink)',lineHeight:1.55,margin:'4px 0 0',textWrap:'pretty'}}>{note}</p>
+              </div>
+            ) : <p className="serif" style={{fontSize:15,color:'var(--muted)',fontStyle:'italic'}}>No note on this section.</p>}
+          </section>
+        );
+      })}
+    </>
+  );
+}
+
+/* Sponsee side: revisit the latest imported notes any time. */
+function SponsorNotesScreen(){
+  const nav=useNav();
+  const {sponsor}=useContacts();
+  const [saved,setSaved]=useState(()=>loadSponsorFeedback());
+  const sponsorName=(saved&&saved.fromName)||(sponsor?sponsor.name:'your sponsor');
+  const remove=()=>{ if(confirm('Remove these notes from this device? You would need the file and key to load them again.')){ clearSponsorFeedback(); setSaved(null); } };
+  return (
+    <>
+      <AppBar eyebrow="Sponsor" title={saved?`Notes from ${sponsorName}`:'Their notes'}/>
       <ScreenBody>
-        {!sponsorMode&&(
+        {!saved&&(
+          <section style={{padding:'24px'}}>
+            <p className="serif" style={{fontSize:16,color:'var(--muted)',fontStyle:'italic'}}>No notes saved yet. When you import feedback, the notes are kept here for continued review.</p>
+          </section>
+        )}
+        {saved&&(
           <>
             <section style={{padding:'4px 24px 0'}}>
-              <NoteBox>When {sponsorName} opens the companion app and scans your code, only the sections enabled here are visible — read-only.</NoteBox>
+              <NoteBox>From the review you imported{saved.savedAt?` on ${new Date(saved.savedAt).toLocaleDateString()}`:''}. Kept on this device until you remove it or import a newer one.</NoteBox>
             </section>
-            <section style={{padding:'24px 24px 0'}}>
-              <div style={{padding:'16px 18px',borderRadius:12,background:'var(--terra-soft)',border:'1px solid var(--terra-soft)',display:'flex',alignItems:'center',gap:14}}>
-                <div style={{width:44,height:44,borderRadius:'50%',background:'var(--surface)',border:'1px solid var(--terra-soft)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                  <span className="serif" style={{fontSize:20,color:'var(--terra-ink)',fontStyle:'italic'}}>{sponsorInitial}</span>
-                </div>
-                <div style={{flex:1,minWidth:0}}>
-                  <div className="serif" style={{fontSize:17,color:'var(--terra-ink)'}}>{sponsorName}</div>
-                  <Stamp style={{marginTop:2,display:'block',color:'var(--terra-ink)'}}>connected · last viewed 5 days ago</Stamp>
-                </div>
-                <ButtonText style={{color:'var(--terra-ink)'}}>code</ButtonText>
-              </div>
-            </section>
-            <section style={{padding:'28px 0 0'}}>
-              <Eyebrow style={{padding:'0 24px',marginBottom:14}}>Sections · {shared.size} of {STEP_SECTIONS.length} shared</Eyebrow>
-              {STEP_SECTIONS.map((s,i)=>(
-                <Pressable key={s.id} onClick={()=>toggle(s.id)} style={{display:'flex',alignItems:'center',gap:14,padding:'14px 24px',borderBottom:'1px solid var(--rule-soft)'}}>
-                  <span className="serif" style={{fontSize:12,color:'var(--terra)',fontStyle:'italic',width:22,fontVariantNumeric:'oldstyle-nums'}}>{s.roman}.</span>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div className="serif" style={{fontSize:17,color:shared.has(s.id)?'var(--ink)':'var(--muted)'}}>{s.title}</div>
-                    <Stamp style={{marginTop:2,display:'block'}}>{s.step} · {s.pg}</Stamp>
-                  </div>
-                  <SwitchInk on={shared.has(s.id)} onToggle={()=>toggle(s.id)}/>
-                </Pressable>
-              ))}
-            </section>
-            <section style={{padding:'28px 24px 36px'}}>
-              <Pressable onClick={()=>setSponsorMode(true)} style={{padding:'14px 16px',border:'1px solid var(--rule)',borderRadius:12,display:'flex',alignItems:'center',gap:14}}>
-                <div style={{flex:1,minWidth:0}}>
-                  <div className="serif" style={{fontSize:16}}>Preview what {sponsorName} sees</div>
-                  <Stamp style={{marginTop:2,display:'block'}}>Step into the sponsor view</Stamp>
-                </div>
-                <span className="serif" style={{color:'var(--terra-ink)',fontSize:18}}>→</span>
-              </Pressable>
+            <FeedbackNotesView inner={saved}/>
+            <section style={{padding:'32px 24px 36px'}}>
+              <ButtonSerif onClick={remove} style={{width:'100%'}}>Remove these notes</ButtonSerif>
             </section>
           </>
         )}
-        {sponsorMode&&<SponsorModeView shared={shared}/>}
+      </ScreenBody>
+    </>
+  );
+}
+
+function SponseeFeedbackScreen(){
+  const nav=useNav();
+  const [stage,setStage]=useState('load'); // load → key → view
+  const [blob,setBlob]=useState(null);
+  const [keyInput,setKeyInput]=useState('');
+  const [inner,setInner]=useState(null);
+  const [err,setErr]=useState('');
+  const loadFile=async ()=>{ setErr(''); const txt=await pickFileText(); if(!txt)return;
+    try{ const b=JSON.parse(txt); if(b.kind!=='sponsor-share') throw new Error('bad'); setBlob(b); setStage('key'); }
+    catch(e){ setErr('Could not read that file. Use the .swshare.json file your sponsor sent.'); } };
+  const tryUnlock=async ()=>{ setErr('');
+    try{ const got=await openSharePackage(blob, keyInput);
+      if(got.dir!=='to-sponsee') throw new Error('This file is a share to send to a sponsor, not feedback for you.');
+      saveSponsorFeedback(got);
+      setInner(got); setStage('view'); }
+    catch(e){ setErr(e.message||'Wrong key.'); } };
+  return (
+    <>
+      <AppBar eyebrow="Sponsor" title="Feedback from sponsor"/>
+      <ScreenBody>
+        {stage==='load'&&(
+          <section style={{padding:'4px 24px 0'}}>
+            <NoteBox>Load the encrypted feedback file your sponsor sent back, then enter the one-time key they gave you.</NoteBox>
+            <ButtonSerif primary onClick={loadFile} style={{width:'100%',marginTop:20}}>Choose the feedback file</ButtonSerif>
+            {err&&<Stamp style={{marginTop:12,display:'block',color:'var(--terra-ink)'}}>{err}</Stamp>}
+          </section>
+        )}
+        {stage==='key'&&(
+          <section style={{padding:'4px 24px 0'}}>
+            <Eyebrow style={{marginBottom:8}}>One-time key</Eyebrow>
+            <SerifInput value={keyInput} onChange={setKeyInput} autoFocus placeholder="e.g. ABCDE-FGHJK"/>
+            <ButtonSerif primary onClick={tryUnlock} style={{width:'100%',marginTop:18}}>Unlock</ButtonSerif>
+            {err&&<Stamp style={{marginTop:12,display:'block',color:'var(--terra-ink)'}}>{err}</Stamp>}
+          </section>
+        )}
+        {stage==='view'&&inner&&(
+          <>
+            <section style={{padding:'4px 24px 0'}}>
+              <NoteBox>Read-only. This is the work you shared with your sponsor's notes added. Nothing here changes your own saved step work. These notes are now kept under Sponsor sharing, so you can come back to them any time.</NoteBox>
+            </section>
+            <FeedbackNotesView inner={inner}/>
+            <section style={{padding:'32px 24px 36px'}}>
+              <ButtonSerif onClick={()=>nav.back()} style={{width:'100%'}}>Done</ButtonSerif>
+            </section>
+          </>
+        )}
+      </ScreenBody>
+    </>
+  );
+}
+
+function SponsorShareScreen(){
+  const nav=useNav();
+  const {steps}=useSteps();
+  const {sponsor}=useContacts();
+  const profile=useProfile();
+  const fromName = (profile && profile.name) || 'Me';
+  const sponsorName = sponsor ? sponsor.name : 'your sponsor';
+  const [chosen,setChosen]=useState(()=>new Set());
+  // Resume a share that was built but never confirmed Done (reload / PIN re-lock).
+  const [result,setResult]=useState(()=>{
+    const p=loadPendingShare();
+    return (p && !isFeedbackLabel(p.label)) ? {blob:p.blob, key:p.key} : null;
+  });
+  const [busy,setBusy]=useState(false);
+
+  // Only offer sections that actually have content.
+  const available = SHARE_STEP_SECTIONS.filter(s=>{
+    const v = steps && steps[s.id];
+    if(Array.isArray(v)) return v.length>0;
+    if(v && typeof v==='object') return Object.keys(v).length>0;
+    return false;
+  });
+  const toggle=(id)=>setChosen(s=>{const n=new Set(s); n.has(id)?n.delete(id):n.add(id); return n;});
+
+  const build=async ()=>{
+    if(chosen.size===0){ alert('Choose at least one section to share.'); return; }
+    setBusy(true);
+    try{
+      const inner = packageForSponsor(steps, [...chosen], fromName);
+      const r = await buildSharePackage(inner);
+      savePendingShare({blob:r.blob, key:r.key, label:'for-review'});
+      setResult(r);
+    }catch(e){ alert(e.message||'Could not prepare the share.'); }
+    setBusy(false);
+  };
+
+  return (
+    <>
+      <AppBar eyebrow="Sponsor" title={result?'Share ready':`Share with ${sponsorName}`}/>
+      <ScreenBody>
+        {!result && (
+          <>
+            <section style={{padding:'4px 24px 0'}}>
+              <NoteBox>Pick the sections to share. They're locked into one encrypted file with a one-time key — only {sponsorName} can open it, and only with the key. This copy of yours stays on your device.</NoteBox>
+            </section>
+            <section style={{padding:'14px 24px 0'}}>
+              <Pressable onClick={()=>nav.push('feedback')} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',border:'1px solid var(--rule)',borderRadius:10}}>
+                <span className="serif" style={{fontSize:18,color:'var(--terra-ink)'}}>↓</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div className="serif" style={{fontSize:16,color:'var(--ink)'}}>Import feedback from {sponsorName}</div>
+                  <Stamp style={{marginTop:2,display:'block'}}>Load their reply file + key</Stamp>
+                </div>
+                <span className="serif" style={{color:'var(--muted)'}}>›</span>
+              </Pressable>
+            </section>
+            {loadSponsorFeedback()&&(
+              <section style={{padding:'14px 24px 0'}}>
+                <Pressable onClick={()=>nav.push('sponsorNotes')} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',border:'1px solid var(--rule)',borderRadius:10,background:'var(--terra-soft)'}}>
+                  <span className="serif" style={{fontSize:18,color:'var(--terra-ink)'}}>❝</span>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div className="serif" style={{fontSize:16,color:'var(--ink)'}}>Notes from {sponsorName}</div>
+                    <Stamp style={{marginTop:2,display:'block'}}>From your last imported review</Stamp>
+                  </div>
+                  <span className="serif" style={{color:'var(--muted)'}}>›</span>
+                </Pressable>
+              </section>
+            )}
+            {available.length===0 ? (
+              <section style={{padding:'28px 24px'}}>
+                <p className="serif" style={{fontSize:16,color:'var(--muted)',fontStyle:'italic'}}>You don't have any step work saved yet. Once you've started an inventory section, you can share it here.</p>
+              </section>
+            ) : (
+              <section style={{padding:'24px 0 0'}}>
+                <Eyebrow style={{padding:'0 24px',marginBottom:8}}>Sections · {chosen.size} selected</Eyebrow>
+                {available.map(s=>(
+                  <Pressable key={s.id} onClick={()=>toggle(s.id)} style={{display:'flex',alignItems:'center',gap:14,padding:'14px 24px',borderBottom:'1px solid var(--rule-soft)'}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div className="serif" style={{fontSize:17,color:chosen.has(s.id)?'var(--ink)':'var(--muted)'}}>{s.label}</div>
+                    </div>
+                    <SwitchInk on={chosen.has(s.id)} onToggle={()=>toggle(s.id)}/>
+                  </Pressable>
+                ))}
+                <section style={{padding:'28px 24px 36px'}}>
+                  <ButtonSerif primary onClick={build} style={{width:'100%'}}>{busy?'Preparing…':'Prepare encrypted share'}</ButtonSerif>
+                </section>
+              </section>
+            )}
+          </>
+        )}
+        {result && <ShareResultView result={result} sponsorName={sponsorName} onDone={()=>nav.back()}/>}
       </ScreenBody>
     </>
   );
@@ -4496,14 +5527,28 @@ function SettingsScreen(){
       <ScreenBody>
         <section style={{padding:'12px 24px 0'}}>
           <Eyebrow style={{marginBottom:12}}>Spiritual language</Eyebrow>
-          <SegPills value={ui.spiritualLanguage} onChange={(v)=>setUI({spiritualLanguage:v})} options={[{value:'god',label:'God'},{value:'hp',label:'Higher Power'},{value:'none',label:'Neutral'}]}/>
-          <p className="serif" style={{fontSize:14,color:'var(--muted)',fontStyle:'italic',marginTop:10,lineHeight:1.5,textWrap:'pretty'}}>Big Book quotations remain as written — your prompts and prayers adapt.</p>
+          <SegPills value={ui.spiritualLanguage} onChange={(v)=>setUI({spiritualLanguage:v})} options={[
+            {value:'god',label:'God'},
+            {value:'hp',label:'Higher Power'},
+            {value:'hashem',label:'Hashem'},
+            {value:'allah',label:'Allah'},
+            {value:'none',label:'Neutral'},
+            {value:'custom',label:'Custom'},
+          ]}/>
+          {ui.spiritualLanguage==='custom' && (
+            <div style={{marginTop:16}}>
+              <Eyebrow style={{marginBottom:6}}>Your word for the Higher Power</Eyebrow>
+              <SerifInput value={ui.customHigherPower||''} onChange={(v)=>setUI({customHigherPower:v})} placeholder="e.g. the Creator, Spirit, my Higher Self"/>
+              <p className="serif" style={{fontSize:13,color:'var(--muted)',fontStyle:'italic',marginTop:6,lineHeight:1.5}}>Used wherever the app would say "Higher Power". Leave blank to keep "Higher Power".</p>
+            </div>
+          )}
+          <p className="serif" style={{fontSize:14,color:'var(--muted)',fontStyle:'italic',marginTop:10,lineHeight:1.5,textWrap:'pretty'}}>Big Book and 12&12 quotations always remain exactly as written. Only your prompts, prayers, and questions adapt.</p>
         </section>
         <Hairline style={{margin:'28px 24px 0'}}/>
         <section style={{padding:'24px 24px 0'}}>
           <Eyebrow style={{marginBottom:12}}>Appearance</Eyebrow>
-          <SegPills value={ui.theme} onChange={(v)=>setUI({theme:v})} options={[{value:'paper',label:'Paper'},{value:'parchment',label:'Parchment'},{value:'dusk',label:'Dusk'}]}/>
-          <p className="serif" style={{fontSize:13,color:'var(--muted)',fontStyle:'italic',marginTop:8,lineHeight:1.5}}>Parchment and Dusk themes are coming. Choice is saved.</p>
+          <SegPills value={ui.theme} onChange={(v)=>setUI({theme:v})} options={[{value:'parchment',label:'Parchment'},{value:'paper',label:'Paper'},{value:'dusk',label:'Dusk'}]}/>
+          <p className="serif" style={{fontSize:13,color:'var(--muted)',fontStyle:'italic',marginTop:8,lineHeight:1.5}}>Parchment is the warm original. Paper is clean white. Dusk is a calm night mode.</p>
           <div style={{marginTop:22}}>
             <Eyebrow style={{marginBottom:12}}>Type size</Eyebrow>
             <SegPills value={ui.typeSize} onChange={(v)=>setUI({typeSize:v})} options={[{value:'small',label:'Small'},{value:'regular',label:'Regular'},{value:'large',label:'Large'}]}/>
@@ -4663,10 +5708,14 @@ function AboutScreen(){
         <section style={{padding:'28px 24px 0'}}>
           <Eyebrow style={{marginBottom:14}}>The 7th tradition</Eyebrow>
           <p className="serif" style={{fontSize:16,color:'var(--ink-2)',lineHeight:1.55,fontStyle:'italic',textWrap:'pretty',margin:0}}>"Every group ought to be fully self-supporting, declining outside contributions."</p>
-          <p className="serif" style={{fontSize:15,color:'var(--ink-2)',marginTop:12,lineHeight:1.55}}>Built in the spirit of service. A portion of every subscription supports the development of this companion app.</p>
+          <p className="serif" style={{fontSize:15,color:'var(--ink-2)',marginTop:12,lineHeight:1.55}}>Built in the spirit of service. If this app helps you, you can support its development below.</p>
+          <a href="https://buymeacoffee.com/clearpath12" target="_blank" rel="noopener noreferrer"
+             className="serif" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,marginTop:18,padding:'13px 16px',border:'1px solid var(--rule)',borderRadius:10,background:'var(--terra-soft)',color:'var(--terra-ink)',fontSize:16,textDecoration:'none'}}>
+            <span aria-hidden="true">☕</span> Buy me a coffee
+          </a>
         </section>
         <section style={{padding:'32px 24px 28px',textAlign:'center'}}>
-          <Stamp>v 0.6.0 · © 2026 · All rights reserved</Stamp>
+          <Stamp>v 0.6.9 · © 2026 · All rights reserved</Stamp>
         </section>
       </ScreenBody>
     </>
@@ -4771,23 +5820,145 @@ function MoreRootScreen(){
         </section>
         <section style={{padding:'32px 24px 28px',textAlign:'center'}}>
           <p className="serif" style={{fontSize:14,color:'var(--muted)',fontStyle:'italic',lineHeight:1.65,textWrap:'pretty',margin:0}}>Your work stays on your device.<br/>No accounts, no servers, no analytics.</p>
-          <Stamp style={{marginTop:14,display:'block'}}>v 0.6.0</Stamp>
+          <Stamp style={{marginTop:14,display:'block'}}>v 0.6.9</Stamp>
         </section>
       </ScreenBody>
     </>
   );
 }
 
+/* Small numeric PIN field for in-settings flows (the full-screen PinKeypad is for
+   the lock gate; here a simple 4–6 digit input keeps the settings flow compact). */
+function PinField({value,onChange,placeholder,autoFocus}){
+  return (
+    <input type="password" inputMode="numeric" pattern="[0-9]*" maxLength={6}
+      value={value} autoFocus={autoFocus}
+      onChange={e=>onChange(e.target.value.replace(/[^0-9]/g,'').slice(0,6))}
+      placeholder={placeholder||'••••'}
+      style={{width:'100%',background:'transparent',border:0,borderBottom:'1px solid var(--rule)',padding:'10px 0',fontFamily:'Newsreader,Georgia,serif',fontSize:22,letterSpacing:'0.3em',color:'var(--ink)',outline:'none',borderRadius:0}}
+      onFocus={e=>e.target.style.borderBottomColor='var(--terra)'}
+      onBlur={e=>e.target.style.borderBottomColor='var(--rule)'}/>
+  );
+}
+
 function SecurityScreen(){
   const nav=useNav();
-  const stored = loadPin();
+  // Reload the stored record after each change so the screen reflects new state.
+  const [stored, setStored] = useState(loadPin);
+  const hasPin = !!stored;
   const hasQ = !!(stored && stored.question);
-  const reset = ()=>{
-    if(confirm('Reset the PIN? You will be asked to set a new one the next time the app opens.')){
-      localStorage.removeItem(PIN_KEY);
-      alert('PIN cleared. Refresh the app to set a new one.');
-    }
+
+  // mode: null | 'changePin' | 'changeQ'
+  const [mode, setMode] = useState(null);
+  const [cur, setCur] = useState('');
+  const [p1, setP1] = useState('');
+  const [p2, setP2] = useState('');
+  const [q, setQ] = useState('');
+  const [a, setA] = useState('');
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const resetFields = ()=>{ setCur('');setP1('');setP2('');setQ('');setA('');setErr(''); };
+  const openMode = (m)=>{ resetFields(); if(m==='changeQ' && stored && stored.question) setQ(stored.question); setMode(m); };
+  const closeMode = ()=>{ resetFields(); setMode(null); };
+
+  // Verify an entered PIN against the stored hash.
+  const verifyCurrent = async ()=>{
+    if(!stored) return false;
+    const h = await sha256(stored.salt + cur);
+    return h === stored.hash;
   };
+
+  const submitChangePin = async ()=>{
+    setErr('');
+    if(cur.length<4){ setErr('Enter your current PIN.'); return; }
+    if(p1.length<4){ setErr('New PIN must be 4–6 digits.'); return; }
+    if(p1!==p2){ setErr("New PINs don't match — try again."); return; }
+    setBusy(true);
+    try{
+      if(!(await verifyCurrent())){ setErr('Current PIN is incorrect.'); setBusy(false); return; }
+      // New salt + hash; re-hash the existing recovery answer under the new salt so
+      // recovery keeps working. (We can't recover the plaintext answer, so if a salt
+      // change is needed we keep the SAME salt to preserve the stored answerHash.)
+      const salt = stored.salt; // keep salt so existing answerHash stays valid
+      const hash = await sha256(salt + p1);
+      const next = { ...stored, version:PIN_VERSION, salt, hash };
+      savePin(next); setStored(next);
+      closeMode();
+      alert('Your PIN has been changed.');
+    }catch(e){ setErr('Something went wrong. Please try again.'); }
+    setBusy(false);
+  };
+
+  const submitChangeQ = async ()=>{
+    setErr('');
+    if(hasPin && cur.length<4){ setErr('Enter your current PIN.'); return; }
+    if(!q.trim()){ setErr('Enter a recovery question.'); return; }
+    if(!a.trim()){ setErr('Enter the answer.'); return; }
+    setBusy(true);
+    try{
+      if(hasPin && !(await verifyCurrent())){ setErr('Current PIN is incorrect.'); setBusy(false); return; }
+      const salt = stored ? stored.salt : randomSalt();
+      const answerHash = await sha256(salt + a.trim().toLowerCase());
+      const next = { ...(stored||{version:PIN_VERSION,salt}), salt, question:q.trim(), answerHash };
+      savePin(next); setStored(next);
+      closeMode();
+      alert('Your recovery question has been updated.');
+    }catch(e){ setErr('Something went wrong. Please try again.'); }
+    setBusy(false);
+  };
+
+  // ── Change PIN flow ──
+  if(mode==='changePin') return (
+    <>
+      <AppBar eyebrow="Security" title="Change PIN" onBack={closeMode}/>
+      <ScreenBody>
+        <section style={{padding:'12px 24px 0'}}>
+          <NoteBox>To change your PIN you must enter the current one first. If you've forgotten it, go back and use "Forgot PIN".</NoteBox>
+        </section>
+        <section style={{padding:'24px 24px 0'}}>
+          <Eyebrow style={{marginBottom:6}}>Current PIN</Eyebrow>
+          <PinField value={cur} onChange={setCur} autoFocus/>
+          <div style={{marginTop:28}}><Eyebrow style={{marginBottom:6}}>New PIN</Eyebrow>
+          <PinField value={p1} onChange={setP1}/></div>
+          <div style={{marginTop:28}}><Eyebrow style={{marginBottom:6}}>Confirm new PIN</Eyebrow>
+          <PinField value={p2} onChange={setP2}/></div>
+          {err && <p className="serif" style={{color:'#a04030',fontStyle:'italic',marginTop:16,fontSize:14}}>{err}</p>}
+          <div style={{marginTop:28,display:'flex',gap:12}}>
+            <ButtonSerif onClick={closeMode}>Cancel</ButtonSerif>
+            <ButtonSerif primary onClick={busy?undefined:submitChangePin}>{busy?'Saving…':'Save new PIN'}</ButtonSerif>
+          </div>
+        </section>
+      </ScreenBody>
+    </>
+  );
+
+  // ── Change recovery question flow ──
+  if(mode==='changeQ') return (
+    <>
+      <AppBar eyebrow="Security" title={hasQ?'Change recovery question':'Set recovery question'} onBack={closeMode}/>
+      <ScreenBody>
+        <section style={{padding:'12px 24px 0'}}>
+          <NoteBox>{hasPin?'Changing your recovery question requires your current PIN.':'Set a PIN first for full protection.'} The answer is stored as a one-way hash and is case-insensitive.</NoteBox>
+        </section>
+        <section style={{padding:'24px 24px 0'}}>
+          {hasPin && (<><Eyebrow style={{marginBottom:6}}>Current PIN</Eyebrow>
+          <PinField value={cur} onChange={setCur} autoFocus/></>)}
+          <div style={{marginTop:hasPin?28:0}}><Eyebrow style={{marginBottom:6}}>Recovery question</Eyebrow>
+          <SerifInput value={q} onChange={setQ} autoFocus={!hasPin} placeholder="e.g. What street did I grow up on?"/></div>
+          <div style={{marginTop:24}}><Eyebrow style={{marginBottom:6}}>Answer</Eyebrow>
+          <SerifInput value={a} onChange={setA} placeholder="Case-insensitive. Choose something only you know."/></div>
+          {err && <p className="serif" style={{color:'#a04030',fontStyle:'italic',marginTop:16,fontSize:14}}>{err}</p>}
+          <div style={{marginTop:28,display:'flex',gap:12}}>
+            <ButtonSerif onClick={closeMode}>Cancel</ButtonSerif>
+            <ButtonSerif primary onClick={busy?undefined:submitChangeQ}>{busy?'Saving…':'Save'}</ButtonSerif>
+          </div>
+        </section>
+      </ScreenBody>
+    </>
+  );
+
+  // ── Overview ──
   return (
     <>
       <AppBar eyebrow="More" title="Security"/>
@@ -4797,15 +5968,22 @@ function SecurityScreen(){
         </section>
         <section style={{padding:'24px 24px 0'}}>
           <Eyebrow style={{marginBottom:8}}>PIN</Eyebrow>
-          <div className="serif" style={{fontSize:17}}>{stored?'Set · asks on every open':'Not set'}</div>
-          <Stamp style={{marginTop:4,display:'block'}}>Reset the PIN to choose a new one.</Stamp>
-          <ButtonSerif onClick={reset} style={{marginTop:14}}>Reset PIN</ButtonSerif>
+          <div className="serif" style={{fontSize:17}}>{hasPin?'Set · asks on every open':'Not set'}</div>
+          <Stamp style={{marginTop:4,display:'block'}}>Changing your PIN requires the current one.</Stamp>
+          <div style={{marginTop:14,display:'flex',gap:12,flexWrap:'wrap'}}>
+            <ButtonSerif onClick={()=>openMode('changePin')}>Change PIN</ButtonSerif>
+          </div>
         </section>
         <Hairline style={{margin:'28px 24px 0'}}/>
         <section style={{padding:'24px 24px 40px'}}>
           <Eyebrow style={{marginBottom:8}}>Recovery question</Eyebrow>
-          <div className="serif" style={{fontSize:17}}>{hasQ?'Set':'Not set'}</div>
-          <Stamp style={{marginTop:4,display:'block'}}>{hasQ?'Used if you forget your PIN.':'Without one, a forgotten PIN means starting over.'}</Stamp>
+          {hasQ
+            ? <div className="serif" style={{fontSize:17,color:'var(--ink)',textWrap:'pretty'}}>{stored.question}</div>
+            : <div className="serif" style={{fontSize:17,color:'var(--muted)',fontStyle:'italic'}}>Not set</div>}
+          <Stamp style={{marginTop:4,display:'block'}}>{hasQ?'Shown here for reference. Used only if you forget your PIN.':'Without one, a forgotten PIN means starting over.'}</Stamp>
+          <div style={{marginTop:14}}>
+            <ButtonSerif onClick={()=>openMode('changeQ')}>{hasQ?'Change recovery question':'Set recovery question'}</ButtonSerif>
+          </div>
         </section>
       </ScreenBody>
     </>
@@ -4867,7 +6045,9 @@ function PracticeScreen(){
 function MoreRouter(){
   const nav=useNav();
   switch(nav.current){
-    case 'sponsor':   return <SponsorScreen/>;
+    case 'sponsor':   return <SponsorShareScreen/>;
+    case 'feedback':  return <SponseeFeedbackScreen/>;
+    case 'sponsorNotes': return <SponsorNotesScreen/>;
     case 'readings':  return <ReadingsScreen/>;
     case 'reminders': return <RemindersScreen/>;
     case 'settings':  return <SettingsScreen/>;
@@ -4893,6 +6073,7 @@ function RouterByTab(){
 }
 
 function App(){
+  useEffect(()=>{ purgeExpiredReviews(); },[]);  // F6: 14-day self-destruct sweep on launch
   return (
     <UISettingsProvider>
       <ProfileProvider>

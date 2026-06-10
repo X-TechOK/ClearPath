@@ -32,6 +32,9 @@
   --dusk:        oklch(0.455 0.055 270);  /* deep slate-violet for night practice */
   --gold:        oklch(0.730 0.075 75);   /* aged ink stamp */
 
+  /* app frame — the area around the centered card (was hardcoded #e8e3da/#f4eee4) */
+  --app-frame:   #e8e3da;
+
   /* radii — gentle, not bubbly */
   --r-sm: 6px;
   --r:    10px;
@@ -42,26 +45,92 @@
   --sh-2: 0 1px 0 rgba(60,40,20,0.05), 0 4px 14px rgba(60,40,20,0.06);
 }
 
+/* ─────────────────────────────────────────────
+   THEMES — :root above is "Parchment" (the warm, default book-paper look).
+   [data-theme="paper"] = clean white.  [data-theme="dusk"] = night/dark mode.
+   Only color tokens are overridden; radii/shadows/type are shared.
+───────────────────────────────────────────── */
+
+/* PAPER — clean white, cool-neutral. The familiar note/word-app default. */
+:root[data-theme="paper"] {
+  --paper:       oklch(1.000 0 0);
+  --paper-deep:  oklch(0.972 0 0);
+  --surface:     oklch(1.000 0 0);
+  --surface-2:   oklch(0.978 0 0);
+
+  --ink:         oklch(0.220 0.005 270);
+  --ink-2:       oklch(0.370 0.006 270);
+  --muted:       oklch(0.555 0.006 270);
+  --faint:       oklch(0.720 0.005 270);
+
+  --rule:        oklch(0.890 0.003 270);
+  --rule-soft:   oklch(0.930 0.002 270);
+
+  --app-frame:   #eef0f2;
+  --paper-glow:  oklch(1.000 0 0);
+
+  --terra-soft:  oklch(0.945 0.022 40);
+  --sage-soft:   oklch(0.955 0.016 155);
+
+  --sh-1: 0 1px 0 rgba(20,20,30,0.04), 0 1px 2px rgba(20,20,30,0.05);
+  --sh-2: 0 1px 0 rgba(20,20,30,0.05), 0 4px 14px rgba(20,20,30,0.07);
+}
+
+/* DUSK — night mode. Deep warm-slate background, light ink. */
+:root[data-theme="dusk"] {
+  --paper:       oklch(0.205 0.012 285);
+  --paper-deep:  oklch(0.175 0.012 285);
+  --surface:     oklch(0.245 0.013 285);
+  --surface-2:   oklch(0.225 0.013 285);
+
+  --ink:         oklch(0.940 0.006 80);
+  --ink-2:       oklch(0.820 0.008 80);
+  --muted:       oklch(0.660 0.010 80);
+  --faint:       oklch(0.520 0.010 80);
+
+  --rule:        oklch(0.360 0.012 285);
+  --rule-soft:   oklch(0.300 0.012 285);
+
+  --app-frame:   #100e16;
+  --paper-glow:  oklch(0.245 0.014 285);
+
+  --terra:       oklch(0.640 0.105 40);
+  --terra-soft:  oklch(0.330 0.055 40);
+  --terra-ink:   oklch(0.720 0.095 40);
+
+  --sage:        oklch(0.660 0.060 155);
+  --sage-soft:   oklch(0.330 0.040 155);
+
+  --dusk:        oklch(0.660 0.075 270);
+  --gold:        oklch(0.770 0.080 75);
+
+  --sh-1: 0 1px 0 rgba(0,0,0,0.20), 0 1px 2px rgba(0,0,0,0.30);
+  --sh-2: 0 1px 0 rgba(0,0,0,0.25), 0 6px 18px rgba(0,0,0,0.40);
+}
+
+/* In Paper/Dusk, drop the warm fiber texture + warm vignette. */
+:root[data-theme="paper"] .paper-bg,
+:root[data-theme="dusk"]  .paper-bg { background-image: none; }
+:root[data-theme="paper"] .paper-bg-deep,
+:root[data-theme="dusk"]  .paper-bg-deep { background-image: none; }
+
 /* paper noise texture — applied behind everything */
 .paper-bg {
   background-color: var(--paper);
   background-image:
-    /* subtle vertical fiber */
     repeating-linear-gradient(
       90deg,
       transparent 0 2px,
       rgba(120, 90, 60, 0.012) 2px 3px
     ),
-    /* horizontal weave */
     repeating-linear-gradient(
       0deg,
       transparent 0 3px,
       rgba(120, 90, 60, 0.010) 3px 4px
     ),
-    /* warm vignette */
     radial-gradient(
       ellipse at 50% -20%,
-      oklch(0.98 0.014 78) 0%,
+      var(--paper-glow, oklch(0.98 0.014 78)) 0%,
       var(--paper) 60%
     );
 }

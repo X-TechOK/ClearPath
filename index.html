@@ -1132,6 +1132,15 @@ function loadPendingShare(){
 function clearPendingShare(){ try{ localStorage.removeItem(PENDING_SHARE_KEY); }catch{} }
 /* 'feedback' is the legacy label kept so an in-flight pending share still resumes. */
 function isFeedbackLabel(l){ return l==='feedback'||l==='review-thoughts'; }
+/* Loose name match for the sponsor's filing step. Program names are informal
+   ("M." vs "Mike R."), so only flag pairs that share nothing at all: any token
+   of one being a prefix of any token of the other counts as a match. */
+function namesLooselyMatch(a,b){
+  const toks=(s)=>String(s||'').toLowerCase().split(/[^a-z]+/).filter(Boolean);
+  const A=toks(a), B=toks(b);
+  if(!A.length||!B.length) return true; // nothing to compare - stay quiet
+  return A.some(x=>B.some(y=>x.startsWith(y)||y.startsWith(x)));
+}
 
 /* ── SAVED SPONSOR NOTES (F6.3) ──
    Sponsee side: the latest unlocked reply from the sponsor is kept on-device so
@@ -4900,7 +4909,14 @@ function SponsorImportScreen(){
     try{ const got=await openSharePackage(blob, keyInput); setInner(got); setStage('match'); }
     catch(e){ setErr(e.message||'Wrong key.'); }
   };
-  const fileUnder=(cid)=>{ addSponseeReview(cid, inner); nav.replace?nav.replace('detail',{id:cid}):nav.goto('people','detail',{id:cid}); };
+  const fileUnder=(cid)=>{
+    const c=contacts.find(x=>x.id===cid);
+    if(inner && inner.fromName && c && !namesLooselyMatch(inner.fromName, c.name)){
+      if(!confirm(`This file says it's from "${inner.fromName}". File it under ${c.name} anyway?`)) return;
+    }
+    addSponseeReview(cid, inner);
+    nav.replace?nav.replace('detail',{id:cid}):nav.goto('people','detail',{id:cid});
+  };
   const createAndFile=()=>{
     const id=addContact({name:inner.fromName||'New sponsee', role:'Sponsee'});
     addSponseeReview(id, inner);
@@ -4929,7 +4945,7 @@ function SponsorImportScreen(){
         )}
         {stage==='match'&&inner&&(
           <section style={{padding:'4px 24px 0'}}>
-            <NoteBox>Unlocked. Who is this from? It'll be filed privately under that person.</NoteBox>
+            <NoteBox>Unlocked{inner.fromName?<> — the file says it's from <b>{inner.fromName}</b></>:null}. Who is this from? It'll be filed privately under that person.</NoteBox>
             <Eyebrow style={{margin:'22px 0 8px'}}>Your sponsees</Eyebrow>
             {sponsees.length===0 && <p className="serif" style={{fontSize:15,color:'var(--muted)',fontStyle:'italic'}}>No sponsees yet.</p>}
             {sponsees.map(c=>(
@@ -5715,7 +5731,7 @@ function AboutScreen(){
           </a>
         </section>
         <section style={{padding:'32px 24px 28px',textAlign:'center'}}>
-          <Stamp>v 0.6.9 · © 2026 · All rights reserved</Stamp>
+          <Stamp>v 0.7.0 · © 2026 · All rights reserved</Stamp>
         </section>
       </ScreenBody>
     </>
@@ -5820,7 +5836,7 @@ function MoreRootScreen(){
         </section>
         <section style={{padding:'32px 24px 28px',textAlign:'center'}}>
           <p className="serif" style={{fontSize:14,color:'var(--muted)',fontStyle:'italic',lineHeight:1.65,textWrap:'pretty',margin:0}}>Your work stays on your device.<br/>No accounts, no servers, no analytics.</p>
-          <Stamp style={{marginTop:14,display:'block'}}>v 0.6.9</Stamp>
+          <Stamp style={{marginTop:14,display:'block'}}>v 0.7.0</Stamp>
         </section>
       </ScreenBody>
     </>

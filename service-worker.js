@@ -6,7 +6,7 @@
    To force-update beta testers: bump CACHE_VERSION below.
 ───────────────────────────────────────────────────────────── */
 
-const CACHE_VERSION = 'v0.7.0';
+const CACHE_VERSION = 'v0.7.3';
 const CACHE_NAME    = `clearpath-${CACHE_VERSION}`;
 
 // Files that should be pre-cached so the app loads offline immediately.

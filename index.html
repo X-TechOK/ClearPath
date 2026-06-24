@@ -296,6 +296,18 @@ const INSTINCTS = [
   {key:'fear',      short:'fear',       long:'Fear (always present)'},
 ];
 
+/* Plain-language sub-labels for the instincts. Security carries the Big Book
+   framing (Safety, Shelter, Finances) from the workshop materials; the rest are
+   descriptive aids, not quotations. */
+const INSTINCT_NOTES = [
+  {long:'Self-esteem',        sub:'How I see myself; my pride and dignity.'},
+  {long:'Security',           sub:'Safety, Shelter, Finances.'},
+  {long:'Ambitions',          sub:'My plans and what I want to achieve.'},
+  {long:'Personal relations', sub:'My standing with the people in my life.'},
+  {long:'Sex relations',      sub:'Intimacy and my sexual relationships.'},
+  {long:'Fear',               sub:'Always present — bracketed alongside the others.'},
+];
+
 /* ── NAV ── */
 const NavContext = createContext(null);
 function useNav(){ return useContext(NavContext); }
@@ -2389,6 +2401,7 @@ function ResentmentListScreen(){
   const [query,setQuery]=useState('');
   const {steps, removeItem} = useSteps();
   const items=steps.resentments;
+  const causeCounts=React.useMemo(()=>{ const m={}; (steps.causes||[]).forEach(c=>{ if(c&&c.name) m[c.name]=(m[c.name]||0)+1; }); return m; },[steps.causes]);
   const counts = {
     all: items.length,
     people: items.filter(r=>r.type==='Person').length,
@@ -2455,7 +2468,10 @@ function ResentmentListScreen(){
             {filtered.map((r)=>(
               <div key={r.id} style={{display:'flex',alignItems:'center',gap:10,padding:'9px 2px',borderBottom:'1px solid var(--rule-soft)'}}>
                 <Pressable onClick={()=>nav.push('lists-edit',{id:r.id})} style={{flex:1,padding:0,textAlign:'left',minWidth:0}}>
-                  <div className="serif" style={{fontSize:17,color:'var(--ink)',lineHeight:1.25,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{r.name}</div>
+                  <div style={{display:'flex',alignItems:'center',gap:8,minWidth:0}}>
+                    <div className="serif" style={{flex:1,minWidth:0,fontSize:17,color:'var(--ink)',lineHeight:1.25,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{r.name}</div>
+                    {causeCounts[r.name]>0 && <CountBadge n={causeCounts[r.name]} label="causes & effects"/>}
+                  </div>
                   <div style={{display:'flex',gap:8,marginTop:1,whiteSpace:'nowrap',overflow:'hidden'}}>
                     <Stamp style={{color:'var(--muted)'}}>{r.type.toLowerCase()}</Stamp>
                     {r.note&&<Stamp style={{color:'var(--faint)',overflow:'hidden',textOverflow:'ellipsis'}}>· {r.note}</Stamp>}
@@ -2625,6 +2641,20 @@ function CausesScreen(){
         <section style={{padding:'20px 24px 0'}}>
           <NoteBox>Write only facts — ten words or less. Tap the instincts that were affected. Fear is always present.</NoteBox>
         </section>
+        <section style={{padding:'18px 24px 0'}}>
+          <Scripture cite="12 & 12, pg 49">"Unreasonable fear that our instincts will not be satisfied drives us to covet the possessions of others, to lust for sex and power, to become angry when our instinctive demands are threatened, to be envious when the ambitions of others seem to be realized while ours are not."</Scripture>
+        </section>
+        <section style={{padding:'18px 24px 0'}}>
+          <div style={{border:'1px solid var(--rule)',borderRadius:12,background:'var(--paper-deep)',padding:'12px 16px'}}>
+            <Eyebrow style={{marginBottom:10}}>What the instincts mean</Eyebrow>
+            {INSTINCT_NOTES.map((it,i)=>(
+              <div key={it.long} style={{display:'flex',gap:10,padding:'5px 0',borderTop:i===0?'none':'1px solid var(--rule-soft)'}}>
+                <span className="serif" style={{minWidth:122,fontSize:15,color:'var(--ink)'}}>{it.long}</span>
+                <span className="serif" style={{flex:1,fontSize:14,fontStyle:'italic',color:'var(--muted)',lineHeight:1.45,textWrap:'pretty'}}>{it.sub}</span>
+              </div>
+            ))}
+          </div>
+        </section>
         {grouped.length===0 && remaining.length===0 && (
           <section style={{padding:'24px',textAlign:'center'}}>
             <p className="serif" style={{fontSize:15,color:'var(--muted)',fontStyle:'italic',lineHeight:1.55}}>
@@ -2640,7 +2670,7 @@ function CausesScreen(){
                 <div className="eyebrow" style={{marginBottom:4}}>Resentful at</div>
                 <h3 className="serif" style={{fontSize:22,fontWeight:400,letterSpacing:'-0.005em',lineHeight:1.2}}>{g.name}</h3>
               </div>
-              <Stamp>{g.rows.length} {g.rows.length===1?'cause':'causes'}</Stamp>
+              <div style={{display:'flex',alignItems:'center',gap:8}}><Stamp>{g.rows.length===1?'cause':'causes'}</Stamp><CountBadge n={g.rows.length}/></div>
             </div>
             <Hairline style={{margin:'14px 24px 0'}} soft/>
             {g.rows.map((c,i)=>(
@@ -3307,6 +3337,11 @@ function FearCategoriesScreen(){
     </>
   );
 }
+
+/* Amends 'direct' types — restored (was referenced by AmendsScreen/AmendEditScreen
+   but its definition had been lost; absence crashed the Amends screen). Index 2
+   ('never') is the safe fallback used when a.direct is missing/unknown. */
+const AMENDS_WILL=[{key:'now',label:'Direct — now',color:'var(--sage)'},{key:'later',label:'Direct — not yet',color:'var(--gold)'},{key:'never',label:'Never',color:'var(--muted)'},{key:'living',label:'Living amends',color:'var(--terra-ink)'}];
 
 function AmendsScreen(){
   const nav=useNav();
@@ -4441,6 +4476,13 @@ function PeopleListScreen(){
   const fellowship=contacts.filter(c=>c.role==='Fellowship');
   const [query,setQuery]=useState('');
   const matchQ=c=>!query||c.name.toLowerCase().includes(query.toLowerCase());
+  const [sort,setSort]=useState('newest'); // 'newest' | 'oldest' | 'az'
+  const applySort=(arr)=>{
+    const a=[...arr];
+    if(sort==='az') a.sort((x,y)=>x.name.localeCompare(y.name));
+    else if(sort==='newest') a.reverse();
+    return a; // 'oldest' keeps insertion order
+  };
   return (
     <>
       <AppBar eyebrow="Fellowship" title="People" right={<ButtonText onClick={()=>nav.push('add')}>+ add</ButtonText>}/>
@@ -4479,15 +4521,29 @@ function PeopleListScreen(){
           <>
             <Hairline style={{margin:'28px 24px 0'}}/>
             <section style={{padding:'24px 24px 0'}}>
-              <Eyebrow style={{marginBottom:14}}>Sponsees · {sponsees.length}</Eyebrow>
-              {sponsees.filter(matchQ).map((c,i,arr)=><ContactRow key={c.id} c={c} last={i===arr.length-1}/>)}
+              <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:10}}>
+                <Eyebrow style={{flex:1,margin:0}}>Sponsees · {sponsees.length}</Eyebrow>
+              </div>
+              {sponsees.length>1 && (
+                <div style={{marginBottom:6}}>
+                  <SegPills value={sort} onChange={setSort} options={[{value:'newest',label:'Newest'},{value:'oldest',label:'Oldest'},{value:'az',label:'A–Z'}]}/>
+                </div>
+              )}
+              {applySort(sponsees.filter(matchQ)).map((c,i,arr)=><ContactRow key={c.id} c={c} last={i===arr.length-1}/>)}
             </section>
           </>
         )}
         <Hairline style={{margin:'28px 24px 0'}}/>
         <section style={{padding:'24px 24px 0'}}>
-          <Eyebrow style={{marginBottom:14}}>Fellowship · {fellowship.length}</Eyebrow>
-          {fellowship.filter(matchQ).map((c,i,arr)=><ContactRow key={c.id} c={c} last={i===arr.length-1}/>)}
+          <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:10}}>
+            <Eyebrow style={{flex:1,margin:0}}>Fellowship · {fellowship.length}</Eyebrow>
+          </div>
+          {fellowship.length>1 && (
+            <div style={{marginBottom:6}}>
+              <SegPills value={sort} onChange={setSort} options={[{value:'newest',label:'Newest'},{value:'oldest',label:'Oldest'},{value:'az',label:'A–Z'}]}/>
+            </div>
+          )}
+          {applySort(fellowship.filter(matchQ)).map((c,i,arr)=><ContactRow key={c.id} c={c} last={i===arr.length-1}/>)}
         </section>
         <section style={{padding:'32px 24px'}}>
           <Pressable onClick={()=>nav.push('add')} style={{display:'flex',alignItems:'center',gap:12,padding:'14px 0',borderTop:'1px dashed var(--rule)'}}>
@@ -4732,7 +4788,7 @@ function ContactEditScreen(){
 function pickFileText(){
   return new Promise((resolve)=>{
     const inp=document.createElement('input');
-    inp.type='file'; inp.accept='.json,application/json';
+    inp.type='file'; inp.accept='.swshare,.json,.swbak,application/json';
     let settled=false;
     const finish=(v)=>{ if(!settled){ settled=true; resolve(v); } };
     inp.onchange=()=>{ const f=inp.files&&inp.files[0]; if(!f){finish(null);return;}
@@ -4751,6 +4807,75 @@ function sectionLabel(id){
    Internal record ids (id, causeId, resentmentId, …) are never shown.
    Answers are rendered under their actual question text (reusing the same
    question constants the worksheets use) so the sponsor reads in context. */
+/* ── Sponsor-view derivations (no share-format change; all client-side) ── */
+/* Sections whose rows carry a person's `name` and can be grouped by person. */
+const PERSON_SECTIONS = ['resentments','causes','faults','fears','sexRelations','amends'];
+
+/* Count summary for one section's payload value. Returns {n, detail}. */
+function shareSectionStats(secId, val){
+  if(val==null) return {n:0, detail:''};
+  if(Array.isArray(val)){
+    const n=val.length;
+    if(secId==='causes'){
+      const names=new Set(val.map(r=>r&&r.name).filter(Boolean));
+      return {n, detail:`across ${names.size} name${names.size===1?'':'s'}`};
+    }
+    if(secId==='amends'){
+      const made=val.filter(r=>r&&r.complete).length;
+      const living=val.filter(r=>r&&r.living&&!r.complete).length;
+      const bits=[]; if(made) bits.push(`${made} made`); if(living) bits.push(`${living} living`);
+      return {n, detail:bits.join(' · ')};
+    }
+    return {n, detail:''};
+  }
+  if(typeof val==='object'){
+    const keys=Object.keys(val);
+    return {n:keys.length, detail:''};
+  }
+  return {n:0, detail:''};
+}
+
+/* How many causes & effects rows hang off a given name (used for the badge). */
+function causeCountForName(causes, name){
+  if(!Array.isArray(causes)) return 0;
+  return causes.filter(c=>c && c.name===name).length;
+}
+
+/* Build a person-keyed index from a review payload.
+   → [{ name, sections: { secId: [rows] }, causeCount }] sorted by causeCount desc. */
+function groupReviewByPerson(payload, stepIds){
+  const map=new Map();
+  (stepIds||[]).forEach(secId=>{
+    if(!PERSON_SECTIONS.includes(secId)) return;
+    const val=payload&&payload[secId];
+    if(!Array.isArray(val)) return;
+    val.forEach(row=>{
+      const nm=(row&&typeof row.name==='string'&&row.name.trim())?row.name.trim():'(unnamed)';
+      if(!map.has(nm)) map.set(nm,{name:nm, sections:{}});
+      const e=map.get(nm);
+      (e.sections[secId]=e.sections[secId]||[]).push(row);
+    });
+  });
+  const out=[...map.values()].map(e=>({
+    ...e,
+    causeCount:(e.sections.causes||[]).length,
+    total:Object.values(e.sections).reduce((a,b)=>a+b.length,0),
+  }));
+  out.sort((a,b)=> b.causeCount-a.causeCount || b.total-a.total || a.name.localeCompare(b.name));
+  return out;
+}
+
+/* Small count badge (e.g. number of causes on a name). */
+function CountBadge({n, label}){
+  if(!n) return null;
+  return (
+    <span className="serif" title={label?`${n} ${label}`:undefined}
+      style={{display:'inline-flex',alignItems:'center',justifyContent:'center',minWidth:22,height:22,padding:'0 7px',
+        borderRadius:11,background:'var(--terra-soft)',color:'var(--terra-ink)',fontSize:12,fontVariantNumeric:'tabular-nums',
+        border:'1px solid var(--rule)',lineHeight:1}}>{n}</span>
+  );
+}
+
 const SHARE_QUESTION_SETS = {
   faults: FAULTS_GROUPS.flatMap(g=>g.questions),
   fear2: FEAR2_QUESTIONS,
@@ -4764,7 +4889,37 @@ const SHARE_FIELD_LABELS = {
 const SHARE_SKIP_KEY = (k)=> k==='id' || /Id$/.test(k);
 
 /* One record (one resentment, one amends row, …) as labeled question/answer rows. */
-function ShareRecord({secId, rec}){
+/* Tap-to-add note on a single record. `noteFor(id)` returns the saved note (or '');
+   `onNote(id,val)` saves it. When `readOnly`, shows the note but no editor (sponsee side). */
+function RecordNote({recId, noteFor, onNote, readOnly, who}){
+  if(!recId || (!onNote && !noteFor)) return null;
+  const existing = noteFor ? (noteFor(recId)||'') : '';
+  const [openEd,setOpenEd]=useState(false);
+  if(readOnly){
+    if(!existing.trim()) return null;
+    return (
+      <div style={{marginTop:8,padding:'10px 14px',borderLeft:'3px solid var(--terra)',background:'var(--terra-soft)',borderRadius:'0 8px 8px 0'}}>
+        <Stamp style={{color:'var(--terra-ink)'}}>{who||"Sponsor's"} note</Stamp>
+        <p className="serif" style={{fontSize:15,color:'var(--ink)',lineHeight:1.5,margin:'3px 0 0',textWrap:'pretty'}}>{existing}</p>
+      </div>
+    );
+  }
+  if(!openEd && !existing.trim()){
+    return (
+      <Pressable onClick={()=>setOpenEd(true)} style={{marginTop:6,padding:'2px 0'}}>
+        <span className="serif" style={{fontSize:13,fontStyle:'italic',color:'var(--terra-ink)'}}>+ add note</span>
+      </Pressable>
+    );
+  }
+  return (
+    <div style={{marginTop:8}}>
+      <Stamp style={{color:'var(--terra-ink)',marginBottom:4,display:'block'}}>Your note on this</Stamp>
+      <SerifTextarea value={existing} onChange={(v)=>onNote(recId,v)} minRows={2} placeholder="Note for this item…" autoFocus={openEd&&!existing}/>
+    </div>
+  );
+}
+
+function ShareRecord({secId, rec, noteFor, onNote, readOnly}){
   const qs = SHARE_QUESTION_SETS[secId]||[];
   const qKeys = new Set(qs.map(q=>q.key));
   const rows=[];
@@ -4776,6 +4931,7 @@ function ShareRecord({secId, rec}){
   });
   const status = secId==='amends' ? (rec.complete?'amends made ✓':(rec.living?'living amends':null)) : null;
   const title = (typeof rec.name==='string'&&rec.name.trim()) ? rec.name : null;
+  const recId = rec && rec.id ? ('item:'+rec.id) : null;
   return (
     <div style={{padding:'12px 0',borderBottom:'1px solid var(--rule-soft)'}}>
       {title&&(
@@ -4791,14 +4947,16 @@ function ShareRecord({secId, rec}){
           <p className="serif" style={{fontSize:16,color:'var(--ink)',lineHeight:1.5,margin:'2px 0 0',textWrap:'pretty'}}>{r.val}</p>
         </div>
       ))}
+      <RecordNote recId={recId} noteFor={noteFor} onNote={onNote} readOnly={readOnly}/>
     </div>
   );
 }
 
-function ReviewSectionBlock({secId, data, comment, onComment}){
+function ReviewSectionBlock({secId, data, comment, onComment, collapsible=true, startOpen=false, noteFor, onNote, readOnly}){
+  const [open,setOpen]=useState(startOpen);
   const rows=[];
   if(Array.isArray(data)){
-    data.forEach((rec,i)=>rows.push(<ShareRecord key={i} secId={secId} rec={rec}/>));
+    data.forEach((rec,i)=>rows.push(<ShareRecord key={i} secId={secId} rec={rec} noteFor={noteFor} onNote={onNote} readOnly={readOnly}/>));
   }else if(data&&typeof data==='object'){
     // fear2: { categoryName: {q1..q9} } — one block per category, questions repeated.
     Object.entries(data).forEach(([cat,answers])=>{
@@ -4822,14 +4980,94 @@ function ReviewSectionBlock({secId, data, comment, onComment}){
       );
     });
   }
-  return (
-    <section style={{padding:'22px 24px 0'}}>
-      <h3 className="serif" style={{fontSize:20,fontWeight:400,marginBottom:8}}>{sectionLabel(secId)}</h3>
+  const stats=shareSectionStats(secId, data);
+  const body=(
+    <>
       {rows.length?rows:<p className="serif" style={{fontSize:15,color:'var(--muted)',fontStyle:'italic'}}>No entries.</p>}
       <div style={{marginTop:12}}>
         <Eyebrow style={{marginBottom:6}}>Your note on this section</Eyebrow>
         <SerifTextarea value={comment||''} onChange={onComment} minRows={2} placeholder="Feedback for this section…"/>
       </div>
+    </>
+  );
+  if(!collapsible){
+    return (
+      <section style={{padding:'22px 24px 0'}}>
+        <h3 className="serif" style={{fontSize:20,fontWeight:400,marginBottom:8}}>{sectionLabel(secId)}</h3>
+        {body}
+      </section>
+    );
+  }
+  return (
+    <section style={{padding:'14px 24px 0'}}>
+      <Pressable onClick={()=>setOpen(o=>!o)} style={{display:'flex',alignItems:'center',gap:12,width:'100%',padding:'12px 14px',border:'1px solid var(--rule)',borderRadius:10,background:open?'var(--paper-deep)':'transparent',textAlign:'left'}}>
+        <div style={{flex:1,minWidth:0}}>
+          <div className="serif" style={{fontSize:18,color:'var(--ink)'}}>{sectionLabel(secId)}</div>
+          <Stamp style={{marginTop:2,display:'block'}}>{stats.n} {stats.n===1?'entry':'entries'}{stats.detail?` · ${stats.detail}`:''}{(comment&&comment.trim())?' · noted':''}</Stamp>
+        </div>
+        <CountBadge n={stats.n}/>
+        <span className="serif" style={{color:'var(--muted)',fontSize:18,transform:open?'rotate(90deg)':'none',transition:'transform .15s'}}>›</span>
+      </Pressable>
+      {open && <div style={{padding:'6px 4px 0'}}>{body}</div>}
+    </section>
+  );
+}
+
+/* Top-of-review summary band: per-section counts so the sponsor sees advancement. */
+function ReviewTotalsBand({steps, payload}){
+  const items=(steps||[]).map(secId=>{
+    const s=shareSectionStats(secId, payload&&payload[secId]);
+    return {secId, label:sectionLabel(secId), ...s};
+  }).filter(x=>x.n>0);
+  if(items.length===0) return null;
+  return (
+    <section style={{padding:'14px 24px 0'}}>
+      <div style={{border:'1px solid var(--rule)',borderRadius:12,background:'var(--paper-deep)',padding:'14px 16px'}}>
+        <Eyebrow style={{marginBottom:10}}>Totals</Eyebrow>
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          {items.map(it=>(
+            <div key={it.secId} style={{display:'flex',alignItems:'baseline',gap:10}}>
+              <span className="serif" style={{flex:1,minWidth:0,fontSize:15,color:'var(--ink-2)'}}>{it.label}</span>
+              {it.detail&&<span className="serif" style={{fontSize:13,fontStyle:'italic',color:'var(--muted)'}}>{it.detail}</span>}
+              <span className="serif" style={{fontSize:16,color:'var(--ink)',fontVariantNumeric:'tabular-nums',minWidth:24,textAlign:'right'}}>{it.n}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* One person in the By-person view — drill from the name into their causes,
+   faults, fears, sex & amends without leaving the screen. */
+function PersonReviewBlock({person, comments, onComment, noteFor, onNote}){
+  const [open,setOpen]=useState(false);
+  const secIds=PERSON_SECTIONS.filter(s=>(person.sections[s]||[]).length>0);
+  return (
+    <section style={{padding:'10px 24px 0'}}>
+      <Pressable onClick={()=>setOpen(o=>!o)} style={{display:'flex',alignItems:'center',gap:14,width:'100%',padding:'12px 14px',border:'1px solid var(--rule)',borderRadius:10,background:open?'var(--paper-deep)':'transparent',textAlign:'left'}}>
+        <InitialAvatar name={person.name} size={38}/>
+        <div style={{flex:1,minWidth:0}}>
+          <div className="serif" style={{fontSize:18,color:'var(--ink)'}}>{person.name}</div>
+          <Stamp style={{marginTop:2,display:'block'}}>{secIds.map(s=>`${(person.sections[s]||[]).length} ${sectionLabel(s).toLowerCase()}`).join(' · ')}</Stamp>
+        </div>
+        <CountBadge n={person.causeCount} label="causes"/>
+        <span className="serif" style={{color:'var(--muted)',fontSize:18,transform:open?'rotate(90deg)':'none',transition:'transform .15s'}}>›</span>
+      </Pressable>
+      {open && (
+        <div style={{padding:'8px 4px 0'}}>
+          {secIds.map(secId=>(
+            <div key={secId} style={{padding:'10px 0 0'}}>
+              <Eyebrow style={{marginBottom:4}}>{sectionLabel(secId)}</Eyebrow>
+              {(person.sections[secId]||[]).map((rec,i)=><ShareRecord key={i} secId={secId} rec={rec} noteFor={noteFor} onNote={onNote}/>)}
+            </div>
+          ))}
+          <div style={{marginTop:12}}>
+            <Eyebrow style={{marginBottom:6}}>Your note on {person.name}</Eyebrow>
+            <SerifTextarea value={(comments&&comments['person:'+person.name])||''} onChange={(v)=>onComment('person:'+person.name, v)} minRows={2} placeholder={`Feedback on ${person.name}…`}/>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -4843,6 +5081,7 @@ function SponseeReviewScreen(){
   const [review,setReview]=useState(()=>{
     const all=loadSponseeReviews(); return (all[contactId]||[]).find(r=>r.reviewId===reviewId)||null;
   });
+  const [mode,setMode]=useState('person'); // 'person' | 'section'
   const [sent,setSent]=useState(()=>{
     const p=loadPendingShare();
     return (p && isFeedbackLabel(p.label) && p.reviewId===reviewId) ? {blob:p.blob, key:p.key} : null;
@@ -4853,6 +5092,10 @@ function SponseeReviewScreen(){
     const next={...review, comments:{...review.comments,[secId]:val}};
     setReview(next); updateSponseeReview(contactId, reviewId, {comments:next.comments});
   };
+  const noteFor=(key)=>(review.comments&&review.comments[key])||'';
+  const onNote=(key,val)=>setComment(key,val);
+  const people=groupReviewByPerson(review.payload, review.steps);
+  const hasPeople=people.length>0;
   const sendBack=async ()=>{
     try{
       const inner=packageReplyForSponsee(review, (profile&&profile.name)||'Your sponsor');
@@ -4863,6 +5106,7 @@ function SponseeReviewScreen(){
     }catch(e){ alert(e.message||'Could not prepare the reply.'); }
   };
   if(sent) return (<><AppBar eyebrow="Send back" title="Feedback ready"/><ScreenBody><ShareResultView result={sent} sponsorName={contact?contact.name:'them'} label="review-thoughts" onDone={()=>nav.back()}/></ScreenBody></>);
+  const effMode = hasPeople ? mode : 'section';
   return (
     <>
       <AppBar eyebrow={contact?`from ${contact.name}`:'review'} title="Shared work"/>
@@ -4873,10 +5117,32 @@ function SponseeReviewScreen(){
             <Stamp style={{color:left<=3?'var(--terra-ink)':'var(--muted)'}}>{left>0?`auto-deletes in ${left} day${left===1?'':'s'}`:'expired'}</Stamp>
           </div>
         </section>
-        {(review.steps||[]).map(secId=>(
-          <ReviewSectionBlock key={secId} secId={secId} data={review.payload&&review.payload[secId]}
-            comment={review.comments&&review.comments[secId]} onComment={(v)=>setComment(secId,v)}/>
-        ))}
+        <ReviewTotalsBand steps={review.steps} payload={review.payload}/>
+        {hasPeople && (
+          <section style={{padding:'16px 24px 0'}}>
+            <SegPills value={effMode} onChange={setMode} options={[{value:'person',label:'By person'},{value:'section',label:'By section'}]}/>
+          </section>
+        )}
+        {effMode==='person' ? (
+          <>
+            <section style={{padding:'14px 24px 0'}}>
+              <Stamp>Tap a name to open their causes, then drill into faults, fears and amends.</Stamp>
+            </section>
+            {people.map(p=>(
+              <PersonReviewBlock key={p.name} person={p} comments={review.comments} onComment={setComment} noteFor={noteFor} onNote={onNote}/>
+            ))}
+            {/* Sections that aren't person-keyed (e.g. Exploration of fear, Defects) still shown below. */}
+            {(review.steps||[]).filter(s=>!PERSON_SECTIONS.includes(s)).map(secId=>(
+              <ReviewSectionBlock key={secId} secId={secId} data={review.payload&&review.payload[secId]}
+                comment={review.comments&&review.comments[secId]} onComment={(v)=>setComment(secId,v)} noteFor={noteFor} onNote={onNote}/>
+            ))}
+          </>
+        ) : (
+          (review.steps||[]).map(secId=>(
+            <ReviewSectionBlock key={secId} secId={secId} data={review.payload&&review.payload[secId]}
+              comment={review.comments&&review.comments[secId]} onComment={(v)=>setComment(secId,v)} noteFor={noteFor} onNote={onNote}/>
+          ))
+        )}
         <section style={{padding:'28px 24px 36px'}}>
           <ButtonSerif primary onClick={sendBack} style={{width:'100%'}}>Send feedback back to {contact?contact.name:'them'}</ButtonSerif>
           <Stamp style={{marginTop:10,display:'block',textAlign:'center'}}>Encrypted the same way — file + a one-time key</Stamp>
@@ -4902,7 +5168,7 @@ function SponsorImportScreen(){
     try{ const b=JSON.parse(txt);
       if(b.kind!=='sponsor-share') throw new Error('That file is not a step-work share.');
       setBlob(b); setStage('key');
-    }catch(e){ setErr('Could not read that file. Make sure it is the .swshare.json file.'); }
+    }catch(e){ setErr('Could not read that file. Make sure it is the .swshare file your sponsee sent.'); }
   };
   const tryUnlock=async ()=>{
     setErr('');
@@ -5004,7 +5270,7 @@ async function saveShareFile(blob, label){
   const json = JSON.stringify(blob);
   const ts=new Date();
   const stamp=`${ts.getFullYear()}${String(ts.getMonth()+1).padStart(2,'0')}${String(ts.getDate()).padStart(2,'0')}-${String(ts.getHours()).padStart(2,'0')}${String(ts.getMinutes()).padStart(2,'0')}`;
-  const filename=`${label}-${stamp}.swshare.json`;
+  const filename=`${label}-${stamp}.swshare`;
   const bytes = new Blob([json], {type:'application/json'});
 
   // 1) Chromium desktop: explicit Save-as dialog (user sees exactly where it goes).
@@ -5012,7 +5278,7 @@ async function saveShareFile(blob, label){
     try{
       const handle = await window.showSaveFilePicker({
         suggestedName: filename,
-        types:[{description:'Encrypted step-work share', accept:{'application/json':['.json']}}],
+        types:[{description:'Encrypted step-work share (.swshare)', accept:{'application/octet-stream':['.swshare']}}],
       });
       const w = await handle.createWritable();
       await w.write(bytes); await w.close();
@@ -5123,22 +5389,52 @@ function ShareResultView({result, sponsorName, onDone, label='for-review'}){
 /* The sponsor's notes, section by section — used on first unlock AND in the
    saved-notes screen, so both always present identically. */
 function FeedbackNotesView({inner}){
+  const noteFor=(key)=>(inner.comments&&inner.comments[key])||'';
   return (
     <>
       {(inner.steps||[]).map(secId=>{
-        const note=inner.comments&&inner.comments[secId];
+        const sectionNote=inner.comments&&inner.comments[secId];
+        const data=inner.payload&&inner.payload[secId];
+        // Per-person notes the sponsor left (keys like 'person:Dad').
+        const personNotes=Object.entries(inner.comments||{})
+          .filter(([k])=>k.indexOf('person:')===0)
+          .map(([k,v])=>({name:k.slice('person:'.length), note:v}))
+          .filter(p=>p.note&&p.note.trim());
+        // Does any record in this section carry its own note? (keys like 'item:<id>')
+        const hasItemNotes = Array.isArray(data) && data.some(r=>r&&r.id && noteFor('item:'+r.id).trim());
         return (
           <section key={secId} style={{padding:'22px 24px 0'}}>
             <h3 className="serif" style={{fontSize:20,fontWeight:400,marginBottom:8}}>{sectionLabel(secId)}</h3>
-            {note ? (
+            {sectionNote ? (
               <div style={{padding:'12px 16px',borderLeft:'3px solid var(--terra)',background:'var(--terra-soft)',borderRadius:'0 8px 8px 0'}}>
-                <Stamp style={{color:'var(--terra-ink)'}}>Sponsor's note</Stamp>
-                <p className="serif" style={{fontSize:16,color:'var(--ink)',lineHeight:1.55,margin:'4px 0 0',textWrap:'pretty'}}>{note}</p>
+                <Stamp style={{color:'var(--terra-ink)'}}>Sponsor's note on this section</Stamp>
+                <p className="serif" style={{fontSize:16,color:'var(--ink)',lineHeight:1.55,margin:'4px 0 0',textWrap:'pretty'}}>{sectionNote}</p>
               </div>
-            ) : <p className="serif" style={{fontSize:15,color:'var(--muted)',fontStyle:'italic'}}>No note on this section.</p>}
+            ) : (!hasItemNotes && <p className="serif" style={{fontSize:15,color:'var(--muted)',fontStyle:'italic'}}>No note on this section.</p>)}
+            {/* Per-element notes shown in context, read-only, under each record. */}
+            {hasItemNotes && (
+              <div style={{marginTop:sectionNote?12:4}}>
+                {data.filter(r=>r&&r.id&&noteFor('item:'+r.id).trim())
+                     .map((rec,i)=><ShareRecord key={i} secId={secId} rec={rec} noteFor={noteFor} readOnly/>)}
+              </div>
+            )}
           </section>
         );
       })}
+      {/* Per-person notes (when the sponsor wrote on a whole name). */}
+      {Object.entries(inner.comments||{}).some(([k,v])=>k.indexOf('person:')===0 && v && v.trim()) && (
+        <section style={{padding:'22px 24px 0'}}>
+          <h3 className="serif" style={{fontSize:20,fontWeight:400,marginBottom:8}}>Notes by person</h3>
+          {Object.entries(inner.comments||{})
+            .filter(([k,v])=>k.indexOf('person:')===0 && v && v.trim())
+            .map(([k,v])=>(
+              <div key={k} style={{padding:'12px 16px',borderLeft:'3px solid var(--terra)',background:'var(--terra-soft)',borderRadius:'0 8px 8px 0',marginBottom:10}}>
+                <Stamp style={{color:'var(--terra-ink)'}}>{k.slice('person:'.length)}</Stamp>
+                <p className="serif" style={{fontSize:16,color:'var(--ink)',lineHeight:1.55,margin:'4px 0 0',textWrap:'pretty'}}>{v}</p>
+              </div>
+            ))}
+        </section>
+      )}
     </>
   );
 }
@@ -5184,7 +5480,7 @@ function SponseeFeedbackScreen(){
   const [err,setErr]=useState('');
   const loadFile=async ()=>{ setErr(''); const txt=await pickFileText(); if(!txt)return;
     try{ const b=JSON.parse(txt); if(b.kind!=='sponsor-share') throw new Error('bad'); setBlob(b); setStage('key'); }
-    catch(e){ setErr('Could not read that file. Use the .swshare.json file your sponsor sent.'); } };
+    catch(e){ setErr('Could not read that file. Use the .swshare file your sponsor sent.'); } };
   const tryUnlock=async ()=>{ setErr('');
     try{ const got=await openSharePackage(blob, keyInput);
       if(got.dir!=='to-sponsee') throw new Error('This file is a share to send to a sponsor, not feedback for you.');
@@ -5731,7 +6027,7 @@ function AboutScreen(){
           </a>
         </section>
         <section style={{padding:'32px 24px 28px',textAlign:'center'}}>
-          <Stamp>v 0.7.0 · © 2026 · All rights reserved</Stamp>
+          <Stamp>v 0.7.3 · © 2026 · All rights reserved</Stamp>
         </section>
       </ScreenBody>
     </>
@@ -5836,7 +6132,7 @@ function MoreRootScreen(){
         </section>
         <section style={{padding:'32px 24px 28px',textAlign:'center'}}>
           <p className="serif" style={{fontSize:14,color:'var(--muted)',fontStyle:'italic',lineHeight:1.65,textWrap:'pretty',margin:0}}>Your work stays on your device.<br/>No accounts, no servers, no analytics.</p>
-          <Stamp style={{marginTop:14,display:'block'}}>v 0.7.0</Stamp>
+          <Stamp style={{marginTop:14,display:'block'}}>v 0.7.3</Stamp>
         </section>
       </ScreenBody>
     </>
